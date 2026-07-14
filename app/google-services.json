@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "599148167888",
+    "project_id": "clevertap-test-app",
+    "storage_bucket": "clevertap-test-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:599148167888:android:0b30d6f63f90375f17d4d5",
+        "android_client_info": {
+          "package_name": "com.example.sports_shop"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAKbR4bC8qzmdhynYM2NszuOC0kFIR3xOo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

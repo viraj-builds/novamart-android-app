@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="/">
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="NovaMart eCommerce App">
+  <title>NovaMart</title>
+  <link rel="manifest" href="manifest.json">
+  <script type="text/javascript">
+     var clevertap = {event:[], profile:[], account:[], onUserLogin:[], notifications:[], privacy:[]};
+     clevertap.account.push({"id": "8WW-975-K87Z"});
+     clevertap.privacy.push({optOut: false});
+     clevertap.privacy.push({useIP: false});
+     (function () {
+         var wzrk = document.createElement('script');
+         wzrk.type = 'text/javascript';
+         wzrk.async = true;
+         wzrk.src = ('https:' == document.location.protocol ? 'https://d2r1yp2w7bby2u.cloudfront.net' : 'http://static.clevertap.com') + '/js/clevertap.min.js';
+         var s = document.getElementsByTagName('script')[0] || document.getElementsByTagName('head')[0];
+         if (s.parentNode) {
+            s.parentNode.insertBefore(wzrk, s);
+         } else {
+            s.appendChild(wzrk);
+         }
+      })();
+  </script>
+</head>
+<body>
+  <script src="main.dart.js" type="application/javascript"></script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+name: sportsphere
+description: A production-ready Flutter eCommerce application for sports accessories.
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+  provider: ^6.0.5
+  google_fonts: ^6.1.0
+  intl: ^0.18.1
+  http: ^1.1.0
+  shared_preferences: ^2.2.1
+  cached_network_image: ^3.3.0
+  flutter_spinkit: ^5.2.0
+  shimmer: ^3.0.0
+  badges: ^3.1.2
+  carousel_slider: ^5.0.0
+  smooth_page_indicator: ^1.1.0
+  flutter_dotenv: ^6.0.1
+  firebase_core: ^3.0.0
+  firebase_auth: ^5.0.0
+  clevertap_plugin: ^3.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/data/
+    - assets/images/
+    - assets/icons/
+    - .env

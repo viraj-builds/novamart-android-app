@@ -1,0 +1,74 @@
+[
+  {
+    "id": "1",
+    "name": "Nike Air Max 270",
+    "price": 150.0,
+    "discount": 10.0,
+    "rating": 4.5,
+    "description": "The Nike Air Max 270 delivers visible cushioning under every step. Updated for modern comfort, it nods to the original 180 from 1991.",
+    "brand": "Nike",
+    "stock": 25,
+    "category": "Running",
+    "images": [
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff",
+      "https://images.unsplash.com/photo-1549298916-b41d501d3772"
+    ],
+    "sizes": ["7", "8", "9", "10", "11"],
+    "colors": ["Red", "Black", "White"],
+    "reviews": [
+      {"user": "John Doe", "rating": 5, "comment": "Amazing shoes!"},
+      {"user": "Jane Smith", "rating": 4, "comment": "Very comfortable but runs small."}
+    ]
+  },
+  {
+    "id": "2",
+    "name": "Spalding TF-1000 Classic",
+    "price": 60.0,
+    "discount": 0.0,
+    "rating": 4.8,
+    "description": "The Spalding TF-1000 Classic is built for the highest level of competitive play. ZK microfiber composite cover for great grip and control.",
+    "brand": "Spalding",
+    "stock": 50,
+    "category": "Basketball",
+    "images": [
+      "https://images.unsplash.com/photo-1546519638-68e109498ffc"
+    ],
+    "sizes": ["Size 7", "Size 6"],
+    "colors": ["Orange"],
+    "reviews": []
+  },
+  {
+    "id": "3",
+    "name": "Wilson Pro Staff 97",
+    "price": 220.0,
+    "discount": 15.0,
+    "rating": 4.9,
+    "description": "Co-designed by Roger Federer, the Pro Staff 97 delivers the pure, classic feel that players have come to love but with an all-new uncontaminated design.",
+    "brand": "Wilson",
+    "stock": 10,
+    "category": "Tennis",
+    "images": [
+      "https://images.unsplash.com/photo-1617083277666-302307774000"
+    ],
+    "sizes": ["4 1/4", "4 3/8", "4 1/2"],
+    "colors": ["Black"],
+    "reviews": []
+  },
+  {
+    "id": "4",
+    "name": "Yonex Astrox 99 Pro",
+    "price": 180.0,
+    "discount": 5.0,
+    "rating": 4.7,
+    "description": "The Yonex Astrox 99 Pro is a power-oriented racket, designed for players who want to dominate the court with powerful smashes.",
+    "brand": "Yonex",
+    "stock": 15,
+    "category": "Badminton",
+    "images": [
+      "https://images.unsplash.com/photo-1626225967045-2c76b2665181"
+    ],
+    "sizes": ["4U G5", "3U G4"],
+    "colors": ["Cherry Sunburst", "White Tiger"],
+    "reviews": []
+  }
+]
