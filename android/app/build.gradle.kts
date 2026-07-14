@@ -4,6 +4,15 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+import java.util.Properties
+import java.io.FileInputStream
+
+val envFile = rootProject.file("../.env")
+val properties = Properties()
+if (envFile.exists()) {
+    properties.load(FileInputStream(envFile))
+}
+
 android {
     namespace = "com.example.sportsphere"
     compileSdk = flutter.compileSdkVersion
@@ -23,6 +32,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        manifestPlaceholders["clevertapAccountId"] = properties.getProperty("CLEVERTAP_ACCOUNT_ID") ?: ""
+        manifestPlaceholders["clevertapRegion"] = properties.getProperty("CLEVERTAP_REGION") ?: ""
     }
 
     buildTypes {

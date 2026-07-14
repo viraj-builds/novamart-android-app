@@ -33,10 +33,10 @@
 
         <meta-data
             android:name="CLEVERTAP_ACCOUNT_ID"
-            android:value="8WW-975-K87Z" />
+            android:value="\${clevertapAccountId}" />
         <meta-data
             android:name="CLEVERTAP_REGION"
-            android:value="eu1" />
+            android:value="\${clevertapRegion}" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
