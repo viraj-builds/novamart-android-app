@@ -35,6 +35,9 @@
             android:name="CLEVERTAP_ACCOUNT_ID"
             android:value="\${clevertapAccountId}" />
         <meta-data
+            android:name="CLEVERTAP_TOKEN"
+            android:value="\${clevertapToken}" />
+        <meta-data
             android:name="CLEVERTAP_REGION"
             android:value="\${clevertapRegion}" />
     </application>

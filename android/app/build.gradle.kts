@@ -35,6 +35,7 @@ android {
         
         manifestPlaceholders["clevertapAccountId"] = properties.getProperty("CLEVERTAP_ACCOUNT_ID") ?: ""
         manifestPlaceholders["clevertapRegion"] = properties.getProperty("CLEVERTAP_REGION") ?: ""
+        manifestPlaceholders["clevertapToken"] = properties.getProperty("CLEVERTAP_TOKEN") ?: ""
     }
 
     buildTypes {
