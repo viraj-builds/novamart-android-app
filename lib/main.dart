@@ -11,6 +11,9 @@ import 'theme/app_theme.dart';
 import 'routes/app_routes.dart';
 import 'services/storage_service.dart';
 
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:clevertap_plugin/clevertap_plugin.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await StorageService.init();
@@ -18,6 +21,24 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
+  // Explicitly ensure the user profile is opted-in to push notifications
+  CleverTapPlugin.setOptOut(false);
+  
+  await FirebaseMessaging.instance.requestPermission();
+  
+  // Get the FCM token and register it with CleverTap
+  String? fcmToken = await FirebaseMessaging.instance.getToken();
+  if (fcmToken != null) {
+    CleverTapPlugin.setPushToken(fcmToken);
+  }
+
+  // Force the profile to be subscribed to Push every time the app opens
+  CleverTapPlugin.profileSet({'MSG-push': true});
+
+  // Create the notification channel for CleverTap
+  CleverTapPlugin.createNotificationChannel(
+      "sportsshop_channel", "Sports Shop Offers", "Updates and offers from Sports Shop", 5, true);
+
   runApp(const NovaMartApp());
 }
 

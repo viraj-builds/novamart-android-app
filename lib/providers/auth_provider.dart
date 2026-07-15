@@ -45,6 +45,7 @@ class AuthProvider with ChangeNotifier {
         'Identity': email,
         'Email': email,
         'Name': email.split('@')[0],
+        'MSG-push': true, // Automatically subscribe all users who log in
       };
       CleverTapPlugin.onUserLogin(profile);
 
@@ -68,6 +69,7 @@ class AuthProvider with ChangeNotifier {
         'Identity': email,
         'Email': email,
         'Name': email.split('@')[0],
+        'MSG-push': true, // Automatically subscribe new signups
       };
       CleverTapPlugin.onUserLogin(profile);
 

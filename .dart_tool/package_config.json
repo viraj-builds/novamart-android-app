@@ -152,6 +152,24 @@
       "languageVersion": "3.4"
     },
     {
+      "name": "firebase_messaging",
+      "rootUri": "file:///Users/viraj.walavalkar/.pub-cache/hosted/pub.dev/firebase_messaging-15.2.10",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
+    },
+    {
+      "name": "firebase_messaging_platform_interface",
+      "rootUri": "file:///Users/viraj.walavalkar/.pub-cache/hosted/pub.dev/firebase_messaging_platform_interface-4.6.10",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
+    },
+    {
+      "name": "firebase_messaging_web",
+      "rootUri": "file:///Users/viraj.walavalkar/.pub-cache/hosted/pub.dev/firebase_messaging_web-3.10.10",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
       "name": "fixnum",
       "rootUri": "file:///Users/viraj.walavalkar/.pub-cache/hosted/pub.dev/fixnum-1.1.1",
       "packageUri": "lib/",

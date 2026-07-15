@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
+import '../providers/cart_provider.dart';
 import '../routes/app_routes.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -51,6 +52,7 @@ class ProfileScreen extends StatelessWidget {
             _buildProfileItem(Icons.info_outline, 'About NovaMart', () {}),
             const Divider(),
             _buildProfileItem(Icons.logout, 'Logout', () async {
+              Provider.of<CartProvider>(context, listen: false).clearCart();
               await authProvider.logout();
               if (context.mounted) {
                 Navigator.pushReplacementNamed(context, AppRoutes.login);
