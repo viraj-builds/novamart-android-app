@@ -23,6 +23,7 @@ void main() async {
   
   // Explicitly ensure the user profile is opted-in to push notifications
   CleverTapPlugin.setOptOut(false);
+  CleverTapPlugin.setDebugLevel(3);
   
   await FirebaseMessaging.instance.requestPermission();
   

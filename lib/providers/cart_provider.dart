@@ -102,11 +102,37 @@ class CartProvider with ChangeNotifier {
 
   void checkout() {
     _analyticsService.beginCheckout(totalAmount, itemCount);
+
+    final String orderId = DateTime.now().millisecondsSinceEpoch.toString();
+
     _analyticsService.purchase(
-      DateTime.now().millisecondsSinceEpoch.toString(),
+      orderId,
       totalAmount,
       _items.keys.map((k) => k.toString()).toList(),
     );
+
+    // ── CleverTap Charged Event ──────────────────────────────────────────────
+    // chargeDetails: order-level properties (required by CleverTap)
+    final Map<String, dynamic> chargeDetails = {
+      'Amount': totalAmount,                // total order value
+      'Charged ID': orderId,               // unique order identifier
+      'Payment mode': 'Credit Card',       // payment method (update as needed)
+    };
+
+    // items: one Map per product in the cart
+    final List<Map<String, dynamic>> items = _items.values.map((cartItem) {
+      return {
+        'Product Name': cartItem.product.name,
+        'Category': cartItem.product.category,
+        'Brand': cartItem.product.brand,
+        'Price': cartItem.product.discountedPrice,
+        'Quantity': cartItem.quantity,
+      };
+    }).toList();
+
+    CleverTapPlugin.recordChargedEvent(chargeDetails, items);
+    // ────────────────────────────────────────────────────────────────────────
+
     clearCart();
   }
 
