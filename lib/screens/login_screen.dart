@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../routes/app_routes.dart';
+import 'package:clevertap_plugin/clevertap_plugin.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,12 +14,14 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
@@ -28,6 +31,16 @@ class _LoginScreenState extends State<LoginScreen> {
           .login(_emailController.text, _passwordController.text);
 
       if (error == null && mounted) {
+        var phone = _phoneController.text.trim();
+        if (phone.isNotEmpty) {
+          if (!phone.startsWith('+')) {
+            phone = '+91$phone';
+          }
+          CleverTapPlugin.profileSet({
+            'Phone': phone,
+            'MSG-sms': true,
+          });
+        }
         Navigator.pushReplacementNamed(context, AppRoutes.main);
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -89,6 +102,17 @@ class _LoginScreenState extends State<LoginScreen> {
                     }
                     return null;
                   },
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Phone Number (Optional)',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.phone),
+                    prefixText: '+91 ',
+                  ),
                 ),
                 const SizedBox(height: 30),
                 ElevatedButton(

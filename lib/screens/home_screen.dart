@@ -219,7 +219,7 @@ class _HomeScreenState extends State<HomeScreen> {
       {
         'title': 'YOGA & WELLNESS',
         'subtitle': 'Premium Mats for Every Pose',
-        'image': 'https://images.unsplash.com/photo-1592433051499-464332308b02?w=800'
+        'image': 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800'
       },
     ];
 

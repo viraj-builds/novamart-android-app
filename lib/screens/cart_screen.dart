@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:clevertap_plugin/clevertap_plugin.dart';
 import '../providers/cart_provider.dart';
 
 class CartScreen extends StatelessWidget {
@@ -169,10 +170,7 @@ class CartScreen extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  cart.checkout();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Order placed successfully! 🎉')),
-                  );
+                  _showCheckoutDialog(context, cart);
                 },
                 child: const Text('Checkout', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
@@ -180,6 +178,34 @@ class CartScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _showCheckoutDialog(BuildContext context, CartProvider cart) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Confirm Checkout'),
+          content: const Text('Are you sure you want to place this order?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                cart.checkout();
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Order placed successfully!')),
+                );
+              },
+              child: const Text('Confirm'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

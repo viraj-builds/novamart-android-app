@@ -24,6 +24,16 @@ class AuthProvider with ChangeNotifier {
         _isAuthenticated = true;
         _email = user.email;
         StorageService.setString('user_email', user.email!);
+
+        // Re-apply channel opt-ins every time the auth session is restored
+        // (covers app restarts where the user is already logged in).
+        // This ensures MSG-email is always set on the NAMED profile, not an
+        // anonymous one (which has no Email address and cannot receive emails).
+        CleverTapPlugin.profileSet({
+          'Email': user.email!,         // Ensure email is always on the profile
+          'MSG-email': true,            // Opt-in to email channel
+          'MSG-push': true,             // Opt-in to push channel
+        });
       } else {
         _isAuthenticated = false;
         _email = null;
@@ -45,7 +55,8 @@ class AuthProvider with ChangeNotifier {
         'Identity': email,
         'Email': email,
         'Name': email.split('@')[0],
-        'MSG-push': true, // Automatically subscribe all users who log in
+        'MSG-push': true,  // Opt-in to push notifications
+        'MSG-email': true, // Opt-in to email channel (required for CleverTap email delivery)
       };
       CleverTapPlugin.onUserLogin(profile);
 
@@ -69,7 +80,8 @@ class AuthProvider with ChangeNotifier {
         'Identity': email,
         'Email': email,
         'Name': email.split('@')[0],
-        'MSG-push': true, // Automatically subscribe new signups
+        'MSG-push': true,  // Opt-in to push notifications
+        'MSG-email': true, // Opt-in to email channel (required for CleverTap email delivery)
       };
       CleverTapPlugin.onUserLogin(profile);
 

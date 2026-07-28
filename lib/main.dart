@@ -13,6 +13,49 @@ import 'services/storage_service.dart';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:clevertap_plugin/clevertap_plugin.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+Future<void> requestNotificationPermission(BuildContext? context) async {
+  final status = await Permission.notification.status;
+
+  if (status.isGranted) {
+    // Already allowed — nothing to do
+    return;
+  }
+
+  if (status.isPermanentlyDenied) {
+    // Android remembers "Don't ask again" — must open Settings manually
+    if (context != null && context.mounted) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Enable Notifications'),
+          content: const Text(
+            'Notifications are permanently blocked. '
+            'Please go to App Settings and enable them manually.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                openAppSettings(); // Opens Android App Settings page
+              },
+              child: const Text('Open Settings'),
+            ),
+          ],
+        ),
+      );
+    }
+    return;
+  }
+
+  // Status is denied or not yet asked — request the dialog
+  await Permission.notification.request();
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,21 +63,31 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  
+
   // Explicitly ensure the user profile is opted-in to push notifications
   CleverTapPlugin.setOptOut(false);
   CleverTapPlugin.setDebugLevel(3);
-  
-  await FirebaseMessaging.instance.requestPermission();
-  
-  // Get the FCM token and register it with CleverTap
-  String? fcmToken = await FirebaseMessaging.instance.getToken();
-  if (fcmToken != null) {
-    CleverTapPlugin.setPushToken(fcmToken);
-  }
 
-  // Force the profile to be subscribed to Push every time the app opens
-  CleverTapPlugin.profileSet({'MSG-push': true});
+  // Request Android 13+ runtime notification permission on first launch
+  await requestNotificationPermission(null);
+
+  // Also request via Firebase (needed for iOS and FCM token generation)
+  await FirebaseMessaging.instance.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
+
+  // NOTE: Do NOT manually call CleverTapPlugin.setPushToken() here.
+  // The app uses android:name="com.clevertap.android.sdk.Application" in
+  // AndroidManifest.xml, which means CleverTap already auto-registers the
+  // FCM token internally. Calling setPushToken() again causes duplicate
+  // registration events and can conflict with the auto-registration flow.
+  //
+  // We only listen for token *refreshes* to keep CleverTap in sync.
+  FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+    CleverTapPlugin.setPushToken(newToken);
+  });
 
   // Create the notification channel for CleverTap
   CleverTapPlugin.createNotificationChannel(
@@ -42,6 +95,7 @@ void main() async {
 
   runApp(const NovaMartApp());
 }
+
 
 class NovaMartApp extends StatelessWidget {
   const NovaMartApp({super.key});
