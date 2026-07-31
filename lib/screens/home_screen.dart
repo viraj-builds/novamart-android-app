@@ -9,6 +9,7 @@ import '../widgets/category_chip.dart';
 import '../widgets/shimmer_card.dart';
 import '../services/analytics_service.dart';
 import '../routes/app_routes.dart';
+import 'package:clevertap_plugin/clevertap_plugin.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -57,7 +58,12 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.notifications_none),
             onPressed: () {
-              Navigator.pushNamed(context, '/notifications'); // We'll add this route later
+              var styleConfig = {
+                'navBarTitle': 'App Inbox',
+                'navBarTitleColor': '#333333',
+                'navBarColor': '#FFFFFF',
+              };
+              CleverTapPlugin.showInbox(styleConfig);
             },
           ),
           IconButton(

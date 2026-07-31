@@ -93,9 +93,44 @@ void main() async {
   CleverTapPlugin.createNotificationChannel(
       "sportsshop_channel", "Sports Shop Offers", "Updates and offers from Sports Shop", 5, true);
 
+  // Initialize App Inbox
+  CleverTapPlugin.initializeInbox();
+
+  // Create plugin instance for handlers
+  var clevertapPlugin = CleverTapPlugin();
+
+  // Handle App Inbox initialization
+  clevertapPlugin.setCleverTapInboxDidInitializeHandler(() {
+    debugPrint("CleverTap App Inbox initialized successfully");
+  });
+
+  clevertapPlugin.setCleverTapInboxNotificationButtonClickedHandler((Map<String, dynamic>? map) {
+    debugPrint("App Inbox button clicked: $map");
+  });
+
+  clevertapPlugin.setCleverTapInboxNotificationMessageClickedHandler((Map<String, dynamic>? map, int index, int buttonIndex) {
+    debugPrint("App Inbox message clicked: $map");
+  });
+
+  // Handle In-App Notifications
+  clevertapPlugin.setCleverTapInAppNotificationButtonClickedHandler((Map<String, dynamic>? map) {
+    debugPrint("In-App button clicked: $map");
+  });
+  
+  clevertapPlugin.setCleverTapInAppNotificationShowHandler((Map<String, dynamic>? map) {
+    debugPrint("In-App notification showed: $map");
+  });
+
+  // Handle Native Display Units loaded
+  clevertapPlugin.setCleverTapDisplayUnitsLoadedHandler((List<dynamic>? displayUnits) {
+    if (displayUnits != null && displayUnits.isNotEmpty) {
+      debugPrint("CleverTap Native Display Units loaded: $displayUnits");
+      // You can store this in a global provider or variable to render in your UI
+    }
+  });
+
   runApp(const NovaMartApp());
 }
-
 
 class NovaMartApp extends StatelessWidget {
   const NovaMartApp({super.key});
