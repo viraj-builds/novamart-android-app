@@ -3,10 +3,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:clevertap_plugin/clevertap_plugin.dart';
 import '../services/storage_service.dart';
 import '../services/analytics_service.dart';
+import '../services/clevertap_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final AnalyticsService _analyticsService = AnalyticsService();
+  final CleverTapService _cleverTap = CleverTapService.instance;
   
   bool _isAuthenticated = false;
   String? _email;
@@ -59,6 +61,10 @@ class AuthProvider with ChangeNotifier {
         'MSG-email': true, // Opt-in to email channel (required for CleverTap email delivery)
       };
       CleverTapPlugin.onUserLogin(profile);
+      // onUserLogin switches to a different CleverTap profile, so the in-app
+      // campaigns and inbox messages for the new user have to be re-pulled.
+      await _cleverTap.fetchInApps();
+      await _cleverTap.refreshInbox();
 
       return null; // success
     } on FirebaseAuthException catch (e) {
@@ -84,6 +90,9 @@ class AuthProvider with ChangeNotifier {
         'MSG-email': true, // Opt-in to email channel (required for CleverTap email delivery)
       };
       CleverTapPlugin.onUserLogin(profile);
+      // Same as login: a new profile means new in-app / inbox targeting.
+      await _cleverTap.fetchInApps();
+      await _cleverTap.refreshInbox();
 
       return null; // success
     } on FirebaseAuthException catch (e) {

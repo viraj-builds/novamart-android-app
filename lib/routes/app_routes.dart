@@ -7,7 +7,7 @@ import '../screens/signup_screen.dart';
 import '../screens/main_screen.dart';
 import '../screens/order_history_screen.dart';
 import '../screens/order_tracking_screen.dart';
-import '../screens/notifications_screen.dart';
+import '../screens/app_inbox_screen.dart';
 import '../screens/category_screen.dart';
 import '../models/product_model.dart';
 
@@ -47,7 +47,8 @@ class AppRoutes {
         final orderId = settings.arguments as String;
         return MaterialPageRoute(builder: (_) => OrderTrackingScreen(orderId: orderId));
       case notifications:
-        return MaterialPageRoute(builder: (_) => const NotificationsScreen());
+        // Backed by the CleverTap App Inbox.
+        return MaterialPageRoute(builder: (_) => const AppInboxScreen());
       case categories:
         return MaterialPageRoute(builder: (_) => const CategoryScreen());
       default:

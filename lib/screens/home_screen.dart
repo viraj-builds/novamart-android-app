@@ -8,8 +8,10 @@ import '../widgets/product_card.dart';
 import '../widgets/category_chip.dart';
 import '../widgets/shimmer_card.dart';
 import '../services/analytics_service.dart';
+import '../services/clevertap_service.dart';
+import '../widgets/native_display_unit.dart';
 import '../routes/app_routes.dart';
-import 'package:clevertap_plugin/clevertap_plugin.dart';
+import 'package:badges/badges.dart' as badges;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,6 +28,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     AnalyticsService().viewHome();
+    // Pick up any Native Display units already cached natively — the loaded
+    // handler only fires when CleverTap pushes a fresh set.
+    CleverTapService.instance.refreshDisplayUnits();
   }
 
   @override
@@ -55,16 +60,30 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('NovaMart', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none),
-            onPressed: () {
-              var styleConfig = {
-                'navBarTitle': 'App Inbox',
-                'navBarTitleColor': '#333333',
-                'navBarColor': '#FFFFFF',
-              };
-              CleverTapPlugin.showInbox(styleConfig);
-            },
+          // App Inbox entry point, badged with the CleverTap unread count.
+          Consumer<CleverTapService>(
+            builder: (context, ct, child) => badges.Badge(
+              showBadge: ct.inboxUnreadCount > 0,
+              position: badges.BadgePosition.topEnd(top: 4, end: 4),
+              badgeContent: Text(
+                '${ct.inboxUnreadCount}',
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+              ),
+              child: child,
+            ),
+            // Long-press opens CleverTap's own native inbox UI, handy for
+            // verifying dashboard styling during QA.
+            child: GestureDetector(
+              onLongPress: () =>
+                  CleverTapService.instance.showNativeInbox(isDark: isDark),
+              child: IconButton(
+                icon: const Icon(Icons.notifications_none),
+                tooltip: 'Notifications',
+                onPressed: () =>
+                    Navigator.pushNamed(context, AppRoutes.notifications),
+              ),
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.filter_list),
@@ -138,6 +157,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       // Hero Banner
                       const SizedBox(height: 16),
                       _buildHeroBanner(),
+
+                      // CleverTap Native Display — dashboard-driven content.
+                      // Collapses to nothing when no campaign is live.
+                      Consumer<CleverTapService>(
+                        builder: (context, _, __) =>
+                            const NativeDisplayPlacement(screen: 'home'),
+                      ),
 
                       // Featured Products
                       _buildSectionTitle('Featured Products', productProvider.featuredProducts.length, context),

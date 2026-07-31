@@ -10,6 +10,7 @@ import 'providers/theme_provider.dart';
 import 'theme/app_theme.dart';
 import 'routes/app_routes.dart';
 import 'services/storage_service.dart';
+import 'services/clevertap_service.dart';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:clevertap_plugin/clevertap_plugin.dart';
@@ -93,41 +94,9 @@ void main() async {
   CleverTapPlugin.createNotificationChannel(
       "sportsshop_channel", "Sports Shop Offers", "Updates and offers from Sports Shop", 5, true);
 
-  // Initialize App Inbox
-  CleverTapPlugin.initializeInbox();
-
-  // Create plugin instance for handlers
-  var clevertapPlugin = CleverTapPlugin();
-
-  // Handle App Inbox initialization
-  clevertapPlugin.setCleverTapInboxDidInitializeHandler(() {
-    debugPrint("CleverTap App Inbox initialized successfully");
-  });
-
-  clevertapPlugin.setCleverTapInboxNotificationButtonClickedHandler((Map<String, dynamic>? map) {
-    debugPrint("App Inbox button clicked: $map");
-  });
-
-  clevertapPlugin.setCleverTapInboxNotificationMessageClickedHandler((Map<String, dynamic>? map, int index, int buttonIndex) {
-    debugPrint("App Inbox message clicked: $map");
-  });
-
-  // Handle In-App Notifications
-  clevertapPlugin.setCleverTapInAppNotificationButtonClickedHandler((Map<String, dynamic>? map) {
-    debugPrint("In-App button clicked: $map");
-  });
-  
-  clevertapPlugin.setCleverTapInAppNotificationShowHandler((Map<String, dynamic>? map) {
-    debugPrint("In-App notification showed: $map");
-  });
-
-  // Handle Native Display Units loaded
-  clevertapPlugin.setCleverTapDisplayUnitsLoadedHandler((List<dynamic>? displayUnits) {
-    if (displayUnits != null && displayUnits.isNotEmpty) {
-      debugPrint("CleverTap Native Display Units loaded: $displayUnits");
-      // You can store this in a global provider or variable to render in your UI
-    }
-  });
+  // Registers the In-App, App Inbox and Native Display handlers and boots the
+  // inbox. Must happen before runApp() so no CleverTap callback is missed.
+  await CleverTapService.instance.init();
 
   runApp(const NovaMartApp());
 }
@@ -144,11 +113,16 @@ class NovaMartApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ProductProvider()..loadProducts()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => WishlistProvider()),
+        // Drives the App Inbox badge/list and the Native Display placements.
+        ChangeNotifierProvider.value(value: CleverTapService.instance),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
           return MaterialApp(
             title: 'NovaMart',
+            // Lets CleverTap callbacks (in-app buttons, inbox taps, display
+            // units) deep link without a BuildContext.
+            navigatorKey: CleverTapService.navigatorKey,
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,

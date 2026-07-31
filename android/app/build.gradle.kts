@@ -57,3 +57,23 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // Required by the CleverTap App Inbox UI (CTInboxActivity renders a
+    // ViewPager2 of RecyclerViews inside a Fragment) and by the In-App
+    // Header/Footer templates.
+    // https://developer.clevertap.com/docs/flutter-app-inbox
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
+    implementation("androidx.viewpager2:viewpager2:1.1.0")
+    implementation("com.google.android.material:material:1.12.0")
+
+    // Image loading for inbox / in-app / native display media.
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+
+    // Video and audio inbox messages. Media3 replaces ExoPlayer from
+    // CleverTap Flutter SDK v2.5.0 onwards.
+    implementation("androidx.media3:media3-exoplayer:1.3.1")
+    implementation("androidx.media3:media3-exoplayer-hls:1.3.1")
+    implementation("androidx.media3:media3-ui:1.3.1")
+}

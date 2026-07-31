@@ -1,55 +1,80 @@
 import 'dart:developer' as developer;
 
+import 'package:clevertap_plugin/clevertap_plugin.dart';
+
+/// Raises the CleverTap events the dashboard campaigns trigger on.
+///
+/// In-App Notifications, App Inbox and Native Display campaigns are all
+/// targeted by event name plus event properties, so the names below must match
+/// the triggers configured in the CleverTap dashboard.
 class AnalyticsService {
   static final AnalyticsService _instance = AnalyticsService._internal();
   factory AnalyticsService() => _instance;
   AnalyticsService._internal();
 
-  void login(String userId, String email) {
-    developer.log('Analytics: Login - ID: $userId, Email: $email');
+  void _record(String event, [Map<String, dynamic>? properties]) {
+    developer.log('CleverTap event: $event ${properties ?? ''}');
+    CleverTapPlugin.recordEvent(event, properties ?? <String, dynamic>{});
   }
 
-  void logout() {
-    developer.log('Analytics: Logout');
-  }
+  void login(String userId, String email) =>
+      _record('Login', {'Identity': userId, 'Email': email});
 
-  void viewHome() {
-    developer.log('Analytics: View Home');
-  }
+  void logout() => _record('Logout');
 
-  void viewCategory(String categoryName) {
-    developer.log('Analytics: View Category - Category: $categoryName');
-  }
+  void viewHome() => _record('Home Viewed');
 
-  void viewProduct(String productId, String productName, double price) {
-    developer.log('Analytics: View Product - ID: $productId, Name: $productName, Price: $price');
-  }
+  void viewCategory(String categoryName) =>
+      _record('Category Viewed', {'Category': categoryName});
 
-  void search(String query) {
-    developer.log('Analytics: Search - Query: $query');
-  }
+  void viewProduct(String productId, String productName, double price) =>
+      _record('Product Viewed', {
+        'Product ID': productId,
+        'Product Name': productName,
+        'Price': price,
+      });
 
-  void wishlist(String productId, String productName, bool added) {
-    developer.log('Analytics: Wishlist ${added ? 'Added' : 'Removed'} - ID: $productId, Name: $productName');
-  }
+  void search(String query) => _record('Product Searched', {'Query': query});
 
-  void addToCart(String productId, String productName, double price, int quantity) {
-    developer.log('Analytics: Add to Cart - ID: $productId, Name: $productName, Price: $price, Qty: $quantity');
-  }
+  void wishlist(String productId, String productName, bool added) =>
+      _record(added ? 'Added To Wishlist' : 'Removed From Wishlist', {
+        'Product ID': productId,
+        'Product Name': productName,
+      });
 
-  void removeFromCart(String productId, String productName) {
-    developer.log('Analytics: Remove from Cart - ID: $productId, Name: $productName');
-  }
+  void addToCart(String productId, String productName, double price, int quantity) =>
+      _record('Add to Cart', {
+        'Product ID': productId,
+        'Product Name': productName,
+        'Price': price,
+        'Quantity': quantity,
+      });
 
-  void beginCheckout(double totalAmount, int itemCount) {
-    developer.log('Analytics: Begin Checkout - Total: $totalAmount, Items: $itemCount');
-  }
+  void removeFromCart(String productId, String productName) =>
+      _record('Removed From Cart', {
+        'Product ID': productId,
+        'Product Name': productName,
+      });
 
-  void purchase(String transactionId, double totalAmount, List<String> itemIds) {
-    developer.log('Analytics: Purchase - TxID: $transactionId, Total: $totalAmount, Items: ${itemIds.join(', ')}');
-  }
+  void beginCheckout(double totalAmount, int itemCount) =>
+      _record('Checkout Started', {
+        'Amount': totalAmount,
+        'Item Count': itemCount,
+      });
 
-  void notificationClicked(String notificationId, String title) {
-    developer.log('Analytics: Notification Clicked - ID: $notificationId, Title: $title');
-  }
+  /// Purchases are reported through `recordChargedEvent` in `CartProvider`,
+  /// which is what CleverTap's revenue reporting reads. This is the lightweight
+  /// companion event used for campaign triggering.
+  void purchase(String transactionId, double totalAmount, List<String> itemIds) =>
+      _record('Purchase Completed', {
+        'Transaction ID': transactionId,
+        'Amount': totalAmount,
+        'Item Count': itemIds.length,
+      });
+
+  void notificationClicked(String notificationId, String title) =>
+      _record('Notification Clicked', {
+        'Notification ID': notificationId,
+        'Title': title,
+      });
 }
