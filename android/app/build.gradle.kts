@@ -8,7 +8,8 @@ plugins {
 import java.util.Properties
 import java.io.FileInputStream
 
-val envFile = rootProject.file("../.env")
+// Load .env from the project root so CLEVERTAP_* keys are available.
+val envFile = rootProject.file(".env")
 val properties = Properties()
 if (envFile.exists()) {
     properties.load(FileInputStream(envFile))
