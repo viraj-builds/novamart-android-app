@@ -77,4 +77,8 @@ dependencies {
     implementation("androidx.media3:media3-exoplayer:1.3.1")
     implementation("androidx.media3:media3-exoplayer-hls:1.3.1")
     implementation("androidx.media3:media3-ui:1.3.1")
+    
+    // Explicitly add firebase-messaging so the app module can access RemoteMessage
+    // and FirebaseMessagingService natively in MyFcmMessageListenerService.
+    implementation("com.google.firebase:firebase-messaging:23.4.1")
 }

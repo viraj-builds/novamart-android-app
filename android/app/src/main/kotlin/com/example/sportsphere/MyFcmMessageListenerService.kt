@@ -53,44 +53,30 @@ class MyFcmMessageListenerService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         Log.d(TAG, "onMessageReceived from: ${message.from}")
 
-        message.data.apply {
-            try {
-                if (size > 0) {
-                    val extras = Bundle()
-                    for ((key, value) in this) {
-                        extras.putString(key, value)
-                    }
-
-                    val info = CleverTapAPI.getNotificationInfo(extras)
-
-                    if (info.fromCleverTap) {
-                        // ── CleverTap push ─────────────────────────────────
-                        // CTFcmMessageHandler is the recommended API for SDK ≥ 4.4.0.
-                        // It renders the notification AND must be called on the
-                        // calling thread (SDK ≥ 5.1.0 requirement — already satisfied
-                        // here because we are inside onMessageReceived).
-                        Log.d(TAG, "CleverTap push → delegating to CT SDK")
-                        CTFcmMessageHandler()
-                            .createNotification(applicationContext, message)
-
-                        // ── Push Impressions (Delivery tracking) ───────────
-                        // Required when using custom push handling AND Push
-                        // Impressions is enabled in the CT dashboard schema.
-                        // Raises a "Push Impressions" event so CT records that
-                        // this notification was *delivered* (not just sent).
-                        // The `extras` bundle built above already contains all
-                        // the wzrk_* keys CT needs for attribution.
-                        CleverTapAPI.getDefaultInstance(applicationContext)
-                            ?.pushNotificationViewedEvent(extras)
-                    } else {
-                        // ── Your own / third-party push ────────────────────
-                        Log.d(TAG, "Non-CleverTap push → custom handler")
-                        handleCustomPush(message)
-                    }
-                }
-            } catch (t: Throwable) {
-                Log.d(TAG, "Error parsing FCM message", t)
+        try {
+            val extras = Bundle()
+            for ((key, value) in message.data) {
+                extras.putString(key, value)
             }
+
+            val info = CleverTapAPI.getNotificationInfo(extras)
+
+            if (info.fromCleverTap) {
+                // ── CleverTap push ─────────────────────────────────
+                Log.d(TAG, "CleverTap push → delegating to CT SDK")
+                CTFcmMessageHandler()
+                    .createNotification(applicationContext, message)
+
+                // ── Push Impressions (Delivery tracking) ───────────
+                CleverTapAPI.getDefaultInstance(applicationContext)
+                    ?.pushNotificationViewedEvent(extras)
+            } else {
+                // ── Your own / third-party push ────────────────────
+                Log.d(TAG, "Non-CleverTap push → custom handler")
+                handleCustomPush(message)
+            }
+        } catch (t: Throwable) {
+            Log.d(TAG, "Error parsing FCM message", t)
         }
     }
 
