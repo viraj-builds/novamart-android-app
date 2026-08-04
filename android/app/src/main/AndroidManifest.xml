@@ -48,8 +48,13 @@
             android:name="CLEVERTAP_NOTIFICATION_ICON"
             android:value="ic_launcher"/>
 
+        <!--
+            Custom FCM listener – replaces the default CleverTap
+            FcmMessageListenerService per the CT docs:
+            https://developer.clevertap.com/docs/android-push#custom-android-push-notification-handling
+        -->
         <service
-            android:name="com.clevertap.android.sdk.pushnotification.fcm.FcmMessageListenerService"
+            android:name="com.example.sportsphere.MyFcmMessageListenerService"
             android:exported="true">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT"/>
