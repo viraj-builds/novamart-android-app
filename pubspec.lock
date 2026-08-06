@@ -101,10 +101,10 @@ packages:
     dependency: "direct main"
     description:
       name: clevertap_plugin
-      sha256: ff4f58430b5f15c53d3e0e1aa5b288e28bfb0eb356b12d867e80619e240c28f4
+      sha256: fb3906afe172101f02855c2f192a166f931679525b963b058185bbbb56758d5a
       url: "https://pub.dev"
     source: hosted
-    version: "3.8.1"
+    version: "4.1.0"
   cli_util:
     dependency: transitive
     description:

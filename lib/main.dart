@@ -14,6 +14,7 @@ import 'services/clevertap_service.dart';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:clevertap_plugin/clevertap_plugin.dart';
+import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 Future<void> requestNotificationPermission(BuildContext? context) async {
@@ -58,6 +59,84 @@ Future<void> requestNotificationPermission(BuildContext? context) async {
   await Permission.notification.request();
 }
 
+Future<void> requestLocationPermission(BuildContext? context) async {
+  final status = await Permission.locationWhenInUse.status;
+
+  if (status.isGranted) {
+    return;
+  }
+
+  if (status.isPermanentlyDenied) {
+    if (context != null && context.mounted) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Enable Location'),
+          content: const Text(
+            'Foreground location permission is required for CleverTap geofence features. '
+            'Please open App Settings and allow location access.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                openAppSettings();
+              },
+              child: const Text('Open Settings'),
+            ),
+          ],
+        ),
+      );
+    }
+    return;
+  }
+
+  await Permission.locationWhenInUse.request();
+}
+
+Future<void> requestBackgroundLocationPermission(BuildContext? context) async {
+  final status = await Permission.locationAlways.status;
+
+  if (status.isGranted) {
+    return;
+  }
+
+  if (status.isPermanentlyDenied) {
+    if (context != null && context.mounted) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Enable Background Location'),
+          content: const Text(
+            'Background location access is required for CleverTap geofence tracking. '
+            'Please open App Settings and allow it.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                openAppSettings();
+              },
+              child: const Text('Open Settings'),
+            ),
+          ],
+        ),
+      );
+    }
+    return;
+  }
+
+  await Permission.locationAlways.request();
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await StorageService.init();
@@ -72,6 +151,10 @@ void main() async {
   // Request Android 13+ runtime notification permission on first launch
   await requestNotificationPermission(null);
 
+  // Request location permission for CleverTap geofence support.
+  await requestLocationPermission(null);
+  await requestBackgroundLocationPermission(null);
+
   // Also request via Firebase (needed for iOS and FCM token generation)
   await FirebaseMessaging.instance.requestPermission(
     alert: true,
@@ -79,16 +162,8 @@ void main() async {
     sound: true,
   );
 
-  // NOTE: Do NOT manually call CleverTapPlugin.setPushToken() here.
-  // The app uses android:name="com.clevertap.android.sdk.Application" in
-  // AndroidManifest.xml, which means CleverTap already auto-registers the
-  // FCM token internally. Calling setPushToken() again causes duplicate
-  // registration events and can conflict with the auto-registration flow.
-  //
-  // We only listen for token *refreshes* to keep CleverTap in sync.
-  FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
-    CleverTapPlugin.setPushToken(newToken);
-  });
+  // FCM token registration is handled natively in MyFcmMessageListenerService
+  // so we do not manually call CleverTapPlugin.setPushToken() here.
 
   // Create the notification channel for CleverTap
   CleverTapPlugin.createNotificationChannel(
@@ -99,6 +174,21 @@ void main() async {
   await CleverTapService.instance.init();
 
   runApp(const NovaMartApp());
+
+  // Trigger a geofence location update once the Flutter UI is mounted.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    _triggerGeofenceLocation();
+  });
+}
+
+Future<void> _triggerGeofenceLocation() async {
+  const channel = MethodChannel('com.example.sportsphere/clevertap_geofence');
+  try {
+    final result = await channel.invokeMethod<bool>('triggerGeofenceLocation');
+    debugPrint('Geofence triggerLocation result: $result');
+  } catch (e) {
+    debugPrint('Geofence triggerLocation failed: $e');
+  }
 }
 
 class NovaMartApp extends StatelessWidget {

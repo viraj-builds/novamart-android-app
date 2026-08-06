@@ -81,4 +81,10 @@ dependencies {
     // Explicitly add firebase-messaging so the app module can access RemoteMessage
     // and FirebaseMessagingService natively in MyFcmMessageListenerService.
     implementation("com.google.firebase:firebase-messaging:23.4.1")
+
+    // CleverTap geofence and location dependencies.
+    implementation("com.clevertap.android:clevertap-geofence-sdk:1.4.0")
+    implementation("com.google.android.gms:play-services-location:21.0.0")
+    implementation("androidx.work:work-runtime:2.7.1")
+    implementation("androidx.concurrent:concurrent-futures:1.1.0")
 }

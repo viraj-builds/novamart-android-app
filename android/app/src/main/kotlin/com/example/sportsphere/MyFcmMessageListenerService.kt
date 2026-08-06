@@ -92,13 +92,11 @@ class MyFcmMessageListenerService : FirebaseMessagingService() {
         super.onNewToken(token)
         Log.d(TAG, "FCM token refreshed: $token")
 
-        // CleverTap SDK will automatically pick up the new token via its
-        // internal ComponentFactory / TokenListenerService; no extra call
-        // is needed unless you are managing tokens manually.
-        //
-        // If you ever manage tokens manually, uncomment and adapt:
-        // val ct = CleverTapAPI.getDefaultInstance(applicationContext)
-        // ct?.pushFcmRegistrationId(token, true)
+        // When using a custom FirebaseMessagingService, CleverTap does not
+        // automatically receive the token. Push it explicitly so CleverTap can
+        // deliver campaigns to this device.
+        CleverTapAPI.getDefaultInstance(applicationContext)?.pushFcmRegistrationId(token, true)
+            ?: Log.w(TAG, "CleverTapAPI instance unavailable; FCM token not registered")
     }
 
     // ─────────────────────────────────────────────────────────────────────────
