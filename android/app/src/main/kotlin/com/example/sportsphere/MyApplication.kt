@@ -137,14 +137,17 @@ class MyApplication : com.clevertap.android.sdk.Application() {
                     }
 
                     try {
-                        val profileUpdates = mapOf<String, Any>(
-                            "Latitude" to location.latitude,
-                            "Longitude" to location.longitude,
-                        )
-                        cleverTapAPI.pushProfile(profileUpdates)
-                        Log.d(TAG, "CleverTap profile location pushed: ${location.latitude}, ${location.longitude}")
+                        // setLocation is the documented way to record a user's
+                        // location — it populates the profile's location field and
+                        // is what geo-segmentation and Geo-Radius campaigns read.
+                        //
+                        // pushProfile with "Latitude"/"Longitude" keys does NOT do
+                        // this: it only creates two unrelated custom profile
+                        // properties, which is why the profile location stayed empty.
+                        cleverTapAPI.setLocation(location)
+                        Log.d(TAG, "CleverTap location set: ${location.latitude}, ${location.longitude}")
                     } catch (t: Throwable) {
-                        Log.e(TAG, "Failed to push CleverTap profile location", t)
+                        Log.e(TAG, "Failed to set CleverTap location", t)
                     }
 
                     try {
