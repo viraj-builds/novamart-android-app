@@ -79,7 +79,13 @@ class MyApplication : com.clevertap.android.sdk.Application() {
             }
 
             setCtGeofenceEventsListener(object : CTGeofenceEventsListener {
-                override fun onGeofenceEnteredEvent(jsonObject: JSONObject) {
+                // Nullable for the same reason as onLocationUpdates below: these
+                // come from a Java interface with no nullability annotations.
+                override fun onGeofenceEnteredEvent(jsonObject: JSONObject?) {
+                    if (jsonObject == null) {
+                        Log.w(TAG, "Received null geofence entered payload; ignoring")
+                        return
+                    }
                     Log.d(TAG, "CleverTap Geofence entered: $jsonObject")
                     try {
                         val eventProps = mapOf(
@@ -93,7 +99,11 @@ class MyApplication : com.clevertap.android.sdk.Application() {
                     }
                 }
 
-                override fun onGeofenceExitedEvent(jsonObject: JSONObject) {
+                override fun onGeofenceExitedEvent(jsonObject: JSONObject?) {
+                    if (jsonObject == null) {
+                        Log.w(TAG, "Received null geofence exited payload; ignoring")
+                        return
+                    }
                     Log.d(TAG, "CleverTap Geofence exited: $jsonObject")
                     try {
                         val eventProps = mapOf(
@@ -109,7 +119,16 @@ class MyApplication : com.clevertap.android.sdk.Application() {
             })
 
             setCtLocationUpdatesListener(object : CTLocationUpdatesListener {
-                override fun onLocationUpdates(location: Location) {
+                // `location` is a Java platform type and IS null when the SDK
+                // cannot resolve a fix (typically because location permission has
+                // not been granted yet). Declaring it non-null makes Kotlin insert
+                // a null-check intrinsic that crashes the main thread on startup.
+                override fun onLocationUpdates(location: Location?) {
+                    if (location == null) {
+                        Log.w(TAG, "Received null location update; ignoring")
+                        return
+                    }
+
                     Log.d(TAG, "CleverTap Geofence location update: ${location.latitude}, ${location.longitude}")
 
                     if (!hasLocationPermissions()) {
