@@ -8,11 +8,26 @@ plugins {
 import java.util.Properties
 import java.io.FileInputStream
 
-// Load .env from the project root so CLEVERTAP_* keys are available.
-val envFile = rootProject.file(".env")
+// Load .env from the Flutter project root so CLEVERTAP_* keys are available.
+// `rootProject` is the `android/` Gradle project, so the repo root is one level
+// up — `rootProject.file(".env")` would resolve to android/.env, which does not
+// exist and silently leaves every CLEVERTAP_* placeholder empty.
+val envFile = rootProject.file("../.env")
 val properties = Properties()
 if (envFile.exists()) {
     properties.load(FileInputStream(envFile))
+} else {
+    throw GradleException(
+        "Missing .env at ${envFile.absolutePath}. CleverTap credentials cannot be " +
+        "resolved, which silently disables all event and profile delivery."
+    )
+}
+
+// Fail fast rather than shipping a build that cannot reach CleverTap.
+listOf("CLEVERTAP_ACCOUNT_ID", "CLEVERTAP_TOKEN", "CLEVERTAP_REGION").forEach { key ->
+    if (properties.getProperty(key).isNullOrBlank()) {
+        throw GradleException("$key is missing or empty in ${envFile.absolutePath}")
+    }
 }
 
 android {

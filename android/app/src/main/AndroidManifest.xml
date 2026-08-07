@@ -39,15 +39,19 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
+        <!-- Values come from manifestPlaceholders in app/build.gradle.kts, which
+             reads them from the repo-root .env. No backslash before ${...}: the
+             manifest merger leaves it in the substituted value, which produces an
+             invalid account id such as "\8WW-975-K87Z". -->
         <meta-data
             android:name="CLEVERTAP_ACCOUNT_ID"
-            android:value="\${clevertapAccountId}" />
+            android:value="${clevertapAccountId}" />
         <meta-data
             android:name="CLEVERTAP_TOKEN"
-            android:value="\${clevertapToken}" />
+            android:value="${clevertapToken}" />
         <meta-data
             android:name="CLEVERTAP_REGION"
-            android:value="\${clevertapRegion}" />
+            android:value="${clevertapRegion}" />
         <meta-data
             android:name="CLEVERTAP_NOTIFICATION_ICON"
             android:value="ic_launcher"/>

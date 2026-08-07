@@ -148,6 +148,4 @@ class MyApplication : com.clevertap.android.sdk.Application() {
         val background = ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.ACCESS_BACKGROUND_LOCATION)
         return fine == PackageManager.PERMISSION_GRANTED && background == PackageManager.PERMISSION_GRANTED
     }
-        }
-    }
 }
