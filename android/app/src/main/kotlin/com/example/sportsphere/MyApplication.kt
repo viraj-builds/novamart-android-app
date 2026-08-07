@@ -18,6 +18,11 @@ class MyApplication : com.clevertap.android.sdk.Application() {
 
     companion object {
         private const val TAG = "MyApplication"
+
+        // Mirrors com.clevertap.android.geofence.Utils.getGeofenceSDKVersion(),
+        // which is package-private. Bump this if clevertap-geofence-sdk is
+        // upgraded past 1.4.0.
+        private const val GEOFENCE_SDK_VERSION = 10400
     }
 
     override fun onCreate() {
@@ -155,6 +160,23 @@ class MyApplication : com.clevertap.android.sdk.Application() {
                         // properties, which is why the profile location stayed empty.
                         cleverTapAPI.setLocation(location)
                         Log.d(TAG, "CleverTap location set: ${location.latitude}, ${location.longitude}")
+
+                        // setLocation only updates the profile. Geocluster
+                        // Entered/Exited is evaluated server side, and only from a
+                        // location submitted via setLocationForGeofences.
+                        //
+                        // CTGeofenceAPI submits one itself, but throttles it hard:
+                        // it requires BOTH >30 min elapsed AND >200 m moved since
+                        // the last submission, otherwise it logs "Not sending last
+                        // location to CleverTap" and drops it. That throttle is not
+                        // configurable, and on an emulator it is effectively never
+                        // satisfied, so geofence campaigns never trigger.
+                        //
+                        // Submitting directly makes every location update evaluate
+                        // geoclusters. 10400 is the geofence SDK version (1.4.0)
+                        // that CTGeofenceAPI reports alongside the location.
+                        cleverTapAPI.setLocationForGeofences(location, GEOFENCE_SDK_VERSION)
+                        Log.d(TAG, "Submitted location for geofence evaluation")
                     } catch (t: Throwable) {
                         Log.e(TAG, "Failed to set CleverTap location", t)
                     }
