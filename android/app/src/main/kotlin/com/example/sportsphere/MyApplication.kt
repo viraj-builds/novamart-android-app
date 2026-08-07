@@ -9,6 +9,7 @@ import com.clevertap.android.sdk.ActivityLifecycleCallback
 import com.clevertap.android.sdk.CleverTapAPI
 import com.clevertap.android.geofence.CTGeofenceAPI
 import com.clevertap.android.geofence.CTGeofenceSettings
+import com.clevertap.android.geofence.Logger
 import com.clevertap.android.geofence.interfaces.CTGeofenceEventsListener
 import com.clevertap.android.geofence.interfaces.CTLocationUpdatesListener
 import org.json.JSONObject
@@ -38,7 +39,15 @@ class MyApplication : com.clevertap.android.sdk.Application() {
         val geofenceSettings = CTGeofenceSettings.Builder()
             .enableBackgroundLocationUpdates(true)
             .setLocationAccuracy(CTGeofenceSettings.ACCURACY_HIGH)
-            .setLocationFetchMode(CTGeofenceSettings.FETCH_CURRENT_LOCATION_PERIODIC)
+            // FETCH_LAST_LOCATION_PERIODIC reads the last known location instead
+            // of requesting a fresh fix. FETCH_CURRENT_LOCATION_PERIODIC asks the
+            // fused provider for a new fix, which emulators cannot produce — it
+            // returns null every cycle ("Location Result is null" in CTGeofence
+            // logs), so no geofence is ever evaluated.
+            .setLocationFetchMode(CTGeofenceSettings.FETCH_LAST_LOCATION_PERIODIC)
+            // Surfaces whether the geofence list actually reached the device and
+            // which fences got registered — without this the SDK is near silent.
+            .setLogLevel(Logger.VERBOSE)
             .build()
 
         CTGeofenceAPI.getInstance(applicationContext).apply {
