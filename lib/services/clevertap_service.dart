@@ -60,10 +60,58 @@ class CleverTapService extends ChangeNotifier {
     _registerInAppHandlers();
     _registerInboxHandlers();
     _registerNativeDisplayHandlers();
+    _registerPushHandlers();
 
     // Boots the inbox and triggers `inboxDidInitialize`. Safe to call on web,
     // where the plugin no-ops.
     await CleverTapPlugin.initializeInbox();
+
+    // Handle notification tap when the app is launched from a KILLED state
+    // (Android only). Must be called after all handlers are registered.
+    // https://developer.clevertap.com/docs/flutter-push-notification#perform-ui-impacting-operation-using-clevertapplugingetapplaunchnotification
+    _handleAppLaunchNotification();
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Push Notifications
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  void _registerPushHandlers() {
+    // Fired when the user taps a CleverTap push while the app is in the
+    // BACKGROUND (not killed). Use this to navigate to the right screen.
+    _plugin.setCleverTapPushNotificationClickedHandler((Map<String, dynamic>? extras) {
+      debugPrint('CleverTap push clicked (background): $extras');
+      _handleDeepLinkFromKV(extras);
+    });
+
+    // Fired when the user taps a CleverTap push from the KILLED state after
+    // the Dart isolate has started. Complements getAppLaunchNotification().
+    CleverTapPlugin.onKilledStateNotificationClicked(_onKilledStateNotificationClicked);
+  }
+
+  static void _onKilledStateNotificationClicked(Map<String, dynamic> extras) {
+    debugPrint('CleverTap push clicked (killed state): $extras');
+    // Navigate using the navigator key — the widget tree may not be mounted
+    // yet, so we schedule the deep-link after the first frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      CleverTapService.instance._handleDeepLinkFromKV(extras);
+    });
+  }
+
+  Future<void> _handleAppLaunchNotification() async {
+    // Android only: retrieve the notification payload that caused a cold launch.
+    // Returns null if the app was NOT opened via a CleverTap notification.
+    try {
+      final CleverTapAppLaunchNotification notification =
+          await CleverTapPlugin.getAppLaunchNotification();
+      if (notification.didNotificationLaunchApp) {
+        debugPrint('App launched from killed state via CT notification: ${notification.payload}');
+        _handleDeepLinkFromKV(notification.payload);
+      }
+    } catch (e) {
+      // getAppLaunchNotification is Android-only; silently ignore on other platforms.
+      debugPrint('getAppLaunchNotification not supported or failed: $e');
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

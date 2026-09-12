@@ -103,7 +103,14 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> logout() async {
+    // Sign out of Firebase — this clears the local persisted session,
+    // so the next cold-start will correctly route to the login screen.
     await _auth.signOut();
     _analyticsService.logout();
+
+    // Per CleverTap docs: clear the Identity key so that any subsequent
+    // anonymous events are not attributed to the signed-out user's profile.
+    // https://developer.clevertap.com/docs/flutter-sdk#user-profiles
+    CleverTapPlugin.profileRemoveValueForKey('Identity');
   }
 }
