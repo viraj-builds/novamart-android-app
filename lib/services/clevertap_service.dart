@@ -79,7 +79,9 @@ class CleverTapService extends ChangeNotifier {
   void _registerPushHandlers() {
     // Fired when the user taps a CleverTap push while the app is in the
     // BACKGROUND (not killed). Use this to navigate to the right screen.
-    _plugin.setCleverTapPushNotificationClickedHandler((Map<String, dynamic>? extras) {
+    // NOTE: In clevertap_plugin v3.x this is setCleverTapPushClickedPayloadReceivedHandler
+    // (renamed to setCleverTapPushNotificationClickedHandler in v4.x).
+    _plugin.setCleverTapPushClickedPayloadReceivedHandler((Map<String, dynamic>? extras) {
       debugPrint('CleverTap push clicked (background): $extras');
       _handleDeepLinkFromKV(extras);
     });
