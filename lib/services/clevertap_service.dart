@@ -108,7 +108,13 @@ class CleverTapService extends ChangeNotifier {
           await CleverTapPlugin.getAppLaunchNotification();
       if (notification.didNotificationLaunchApp) {
         debugPrint('App launched from killed state via CT notification: ${notification.payload}');
-        _handleDeepLinkFromKV(notification.payload);
+        // init() is awaited before runApp(), so there is no Navigator yet and
+        // navigatorKey.currentState is still null — routing here would be
+        // silently dropped. Defer until the first frame has been rendered, the
+        // same way _onKilledStateNotificationClicked does.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _handleDeepLinkFromKV(notification.payload);
+        });
       }
     } catch (e) {
       // getAppLaunchNotification is Android-only; silently ignore on other platforms.

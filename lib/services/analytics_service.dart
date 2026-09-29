@@ -42,12 +42,26 @@ class AnalyticsService {
         'Product Name': productName,
       });
 
-  void addToCart(String productId, String productName, double price, int quantity) =>
+  /// Sole source of the "Add to Cart" event — do not also call recordEvent for
+  /// it elsewhere, or every add is counted twice and any campaign triggering on
+  /// it fires twice.
+  void addToCart(
+    String productId,
+    String productName,
+    double price,
+    int quantity, {
+    String? category,
+    String? brand,
+    num? discountPercent,
+  }) =>
       _record('Add to Cart', {
         'Product ID': productId,
         'Product Name': productName,
         'Price': price,
         'Quantity': quantity,
+        if (category != null) 'Category': category,
+        if (brand != null) 'Brand': brand,
+        if (discountPercent != null) 'Discount Percent': discountPercent,
       });
 
   void removeFromCart(String productId, String productName) =>

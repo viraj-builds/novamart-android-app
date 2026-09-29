@@ -148,20 +148,6 @@ void main() async {
   CleverTapPlugin.setOptOut(false);
   CleverTapPlugin.setDebugLevel(3);
 
-  // Request Android 13+ runtime notification permission on first launch
-  await requestNotificationPermission(null);
-
-  // Request location permission for CleverTap geofence support.
-  await requestLocationPermission(null);
-  await requestBackgroundLocationPermission(null);
-
-  // Also request via Firebase (needed for iOS and FCM token generation)
-  await FirebaseMessaging.instance.requestPermission(
-    alert: true,
-    badge: true,
-    sound: true,
-  );
-
   // FCM token registration is handled natively in MyFcmMessageListenerService
   // so we do not manually call CleverTapPlugin.setPushToken() here.
 
@@ -175,10 +161,38 @@ void main() async {
 
   runApp(const NovaMartApp());
 
-  // Trigger a geofence location update once the Flutter UI is mounted.
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    _triggerGeofenceLocation();
+  // Permissions are requested only once the first frame is on screen.
+  //
+  // They used to be awaited before runApp(), which meant no Flutter UI existed
+  // at all while the OS dialogs were up. On Android 11+ the background-location
+  // request does not even show a dialog — it sends the user out to the system
+  // Settings screen — so main() sat awaiting behind a blank window long enough
+  // for Android to raise "App not responding" and kill the app.
+  //
+  // It only reproduced on a fresh install: an install that already held the
+  // grants (any device used for repeated `flutter run`) returned from every
+  // await immediately and reached runApp() before the ANR timer.
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    await _requestPermissions();
+    await _triggerGeofenceLocation();
   });
+}
+
+Future<void> _requestPermissions() async {
+  // Android 13+ runtime notification permission.
+  await requestNotificationPermission(null);
+
+  // Needed for iOS and for FCM token generation.
+  await FirebaseMessaging.instance.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
+
+  // Location, for CleverTap geofencing. Foreground must be granted first —
+  // Android rejects a background request that arrives before it.
+  await requestLocationPermission(null);
+  await requestBackgroundLocationPermission(null);
 }
 
 Future<void> _triggerGeofenceLocation() async {

@@ -27,9 +27,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void _login() async {
     if (_formKey.currentState!.validate()) {
       // Phone goes through login() so it reaches CleverTap inside the single
-      // onUserLogin call. Pushing it here with profileSet would write an
-      // identity field to the currently active profile and merge this user with
-      // whoever was logged in before.
+      // onUserLogin call, rather than as a follow-up profileSet.
       final error = await Provider.of<AuthProvider>(context, listen: false)
           .login(
         _emailController.text,

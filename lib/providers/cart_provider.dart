@@ -49,19 +49,18 @@ class CartProvider with ChangeNotifier {
       );
     }
     
-    // Original Analytics tracking
-    _analyticsService.addToCart(product.id.toString(), product.name, product.price, quantity);
-    
-    // CleverTap Add to Cart tracking
-    var eventData = {
-      'Product Name': product.name,
-      'Category': product.category,
-      'Brand': product.brand,
-      'Price': product.price,
-      'Discount Percent': product.discount,
-      'Quantity': quantity,
-    };
-    CleverTapPlugin.recordEvent("Add to Cart", eventData);
+    // Raises the CleverTap "Add to Cart" event. This used to be recorded here a
+    // second time with recordEvent as well, which double-counted every add and
+    // fired any campaign triggering on it twice.
+    _analyticsService.addToCart(
+      product.id.toString(),
+      product.name,
+      product.price,
+      quantity,
+      category: product.category,
+      brand: product.brand,
+      discountPercent: product.discount,
+    );
 
     _saveCart();
     notifyListeners();

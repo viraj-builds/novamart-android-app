@@ -110,8 +110,14 @@ class AuthProvider with ChangeNotifier {
   ///
   /// Every identity field the app knows about must be passed here in one call.
   /// Identity fields sent separately via profileSet land on whatever profile is
-  /// currently active and merge that user with this one — which is why Phone is
-  /// included here rather than pushed from the login screen afterwards.
+  /// currently active and merge that user with this one, so every identity field
+  /// must be passed in this single call.
+  ///
+  /// Phone is included here for ordering rather than merge safety: it is not
+  /// configured as an identity field in this CleverTap project, so pushing it
+  /// separately was not merging profiles. Sending it with the identification
+  /// call still avoids a second round trip and a window where the profile has an
+  /// email but no number. Promote it in the dashboard and it is already correct.
   Map<String, dynamic> _buildProfile(String email, String? phone) {
     final profile = <String, dynamic>{
       'Identity': email,
