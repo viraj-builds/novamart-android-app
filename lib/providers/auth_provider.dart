@@ -133,7 +133,24 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> logout() async {
+    // Record the event while the profile is still identified, so it is
+    // attributed to the user who actually logged out rather than to whatever
+    // profile is active afterwards.
     _analyticsService.logout();
+
+    // Sign out of Firebase — this clears the local persisted session,
+    // so the next cold-start will correctly route to the login screen.
     await _auth.signOut();
+
+    // Clear the Identity key so that any subsequent anonymous events are not
+    // attributed to the signed-out user's profile.
+    //
+    // NOTE: this mutates the stored profile rather than un-identifying the
+    // device, and CleverTap exposes no SDK-side logout. If it takes effect it
+    // deletes Identity from that user's real profile; if identity fields are
+    // protected it is a no-op and anonymous events still land on them. Either
+    // way the next onUserLogin is what actually switches profiles. Verify on
+    // the dashboard before relying on this.
+    CleverTapPlugin.profileRemoveValueForKey('Identity');
   }
 }

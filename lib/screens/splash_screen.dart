@@ -1,7 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../routes/app_routes.dart';
-import '../providers/auth_provider.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -17,15 +16,24 @@ class _SplashScreenState extends State<SplashScreen> {
     _navigateToHome();
   }
 
-  _navigateToHome() async {
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      if (authProvider.isAuthenticated) {
-        Navigator.pushReplacementNamed(context, AppRoutes.main);
-      } else {
-        Navigator.pushReplacementNamed(context, AppRoutes.login);
-      }
+  Future<void> _navigateToHome() async {
+    // Show splash for at least 2 seconds, AND wait for Firebase to restore
+    // the persisted auth session from disk. Both must complete before we route.
+    // Using authStateChanges().first is the correct way — it resolves as soon
+    // as Firebase emits the first event (null = no session, User = has session),
+    // which avoids the race condition of a fixed delay.
+    final results = await Future.wait([
+      Future.delayed(const Duration(seconds: 2)),
+      FirebaseAuth.instance.authStateChanges().first,
+    ]);
+
+    if (!mounted) return;
+
+    final user = results[1] as User?;
+    if (user != null) {
+      Navigator.pushReplacementNamed(context, AppRoutes.main);
+    } else {
+      Navigator.pushReplacementNamed(context, AppRoutes.login);
     }
   }
 
