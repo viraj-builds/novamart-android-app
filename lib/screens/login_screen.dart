@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../routes/app_routes.dart';
-import 'package:clevertap_plugin/clevertap_plugin.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -27,20 +26,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _login() async {
     if (_formKey.currentState!.validate()) {
+      // Phone goes through login() so it reaches CleverTap inside the single
+      // onUserLogin call. Pushing it here with profileSet would write an
+      // identity field to the currently active profile and merge this user with
+      // whoever was logged in before.
       final error = await Provider.of<AuthProvider>(context, listen: false)
-          .login(_emailController.text, _passwordController.text);
+          .login(
+        _emailController.text,
+        _passwordController.text,
+        phone: _phoneController.text,
+      );
 
       if (error == null && mounted) {
-        var phone = _phoneController.text.trim();
-        if (phone.isNotEmpty) {
-          if (!phone.startsWith('+')) {
-            phone = '+91$phone';
-          }
-          CleverTapPlugin.profileSet({
-            'Phone': phone,
-            'MSG-sms': true,
-          });
-        }
         Navigator.pushReplacementNamed(context, AppRoutes.main);
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
