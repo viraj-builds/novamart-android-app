@@ -9,9 +9,15 @@ class AuthProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final AnalyticsService _analyticsService = AnalyticsService();
   final CleverTapService _cleverTap = CleverTapService.instance;
-  
+
   bool _isAuthenticated = false;
   String? _email;
+
+  /// Set to true by login()/signup() BEFORE triggering signIn so the auth
+  /// listener knows the session event is from an active login action — not a
+  /// cold-start restore — and skips the re-identification call (login/signup
+  /// call onUserLogin themselves immediately after).
+  bool _isLoggingIn = false;
 
   bool get isAuthenticated => _isAuthenticated;
   String? get email => _email;
@@ -21,31 +27,48 @@ class AuthProvider with ChangeNotifier {
   }
 
   void _initAuthListener() {
-    _auth.authStateChanges().listen((User? user) {
+    _auth.authStateChanges().listen((User? user) async {
       if (user != null) {
         _isAuthenticated = true;
         _email = user.email;
         StorageService.setString('user_email', user.email!);
 
-        // Re-apply channel opt-ins every time the auth session is restored
-        // (covers app restarts where the user is already logged in).
-        //
-        // Only non-identity properties belong here. Identity fields (Email,
-        // Identity, Phone) must NEVER be pushed with profileSet:
-        //
-        //   "If you push multiple identities on the same device without using
-        //    the OnUserLogin API, CleverTap will merge profiles for all of
-        //    these users."
-        //   https://developer.clevertap.com/docs/concepts-user-profiles
-        //
-        // profileSet writes to whichever profile is currently active, it does
-        // not switch profiles. This listener fires on sign-in before
-        // onUserLogin has run, so pushing 'Email' here stamped the incoming
-        // user's address onto the previous user's profile and merged the two.
-        // Identity is established solely by onUserLogin in login()/signup().
+        if (_isLoggingIn) {
+          // Active login/signup flow: login()/signup() call onUserLogin
+          // themselves right after signIn completes, so we skip it here to
+          // avoid a double identification call on the same event loop tick.
+          _isLoggingIn = false;
+        } else {
+          // ── App-start / update re-identification ─────────────────────────
+          // Audit fix: CleverTap docs require onUserLogin to run whenever a
+          // previously-logged-in user opens the app (including after an update)
+          // so the SDK re-associates the device with the correct profile.
+          //
+          // We only have Email at this point (Firebase persists it); Phone was
+          // not stored separately, so we omit it here — the profile on the
+          // CleverTap side already has it from the original login call.
+          //
+          // https://developer.clevertap.com/docs/concepts-user-profiles
+          CleverTapPlugin.onUserLogin({
+            'Identity': user.email!,
+            'Email':    user.email!,
+            'Name':     user.email!.split('@')[0],
+            'MSG-push':  true,
+            'MSG-email': true,
+          });
+
+          // Re-fetch in-app campaigns and inbox for this profile (same as
+          // login/signup — the SDK may have rotated to an anonymous profile
+          // between sessions if the app was cleared from memory).
+          await _cleverTap.fetchInApps();
+          await _cleverTap.refreshInbox();
+        }
+
+        // Always re-assert channel opt-ins (safe with profileSet since these
+        // are not identity fields and cannot trigger profile merges).
         CleverTapPlugin.profileSet({
-          'MSG-email': true,            // Opt-in to email channel
-          'MSG-push': true,             // Opt-in to push channel
+          'MSG-email': true,
+          'MSG-push':  true,
         });
       } else {
         _isAuthenticated = false;
@@ -58,6 +81,9 @@ class AuthProvider with ChangeNotifier {
 
   Future<String?> login(String email, String password, {String? phone}) async {
     try {
+      // Guard the auth listener so it skips the re-identification path —
+      // we call onUserLogin ourselves below after the credential resolves.
+      _isLoggingIn = true;
       final credential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
@@ -77,14 +103,18 @@ class AuthProvider with ChangeNotifier {
 
       return null; // success
     } on FirebaseAuthException catch (e) {
+      _isLoggingIn = false; // login failed — reset so next app-start re-identifies
       return e.message ?? 'An unknown authentication error occurred.';
     } catch (e) {
+      _isLoggingIn = false;
       return 'Failed to log in: $e';
     }
   }
 
   Future<String?> signup(String email, String password, {String? phone}) async {
     try {
+      // Same guard as login() — prevents a double onUserLogin call.
+      _isLoggingIn = true;
       final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
@@ -100,8 +130,10 @@ class AuthProvider with ChangeNotifier {
 
       return null; // success
     } on FirebaseAuthException catch (e) {
+      _isLoggingIn = false; // signup failed — reset so next app-start re-identifies
       return e.message ?? 'An unknown error occurred during sign up.';
     } catch (e) {
+      _isLoggingIn = false;
       return 'Failed to sign up: $e';
     }
   }
@@ -128,14 +160,47 @@ class AuthProvider with ChangeNotifier {
     };
 
     if (phone != null && phone.trim().isNotEmpty) {
-      var normalized = phone.trim();
-      // CleverTap requires E.164, i.e. a leading country code.
-      if (!normalized.startsWith('+')) normalized = '+91$normalized';
-      profile['Phone'] = normalized;
-      profile['MSG-sms'] = true;
+      final normalized = _toE164India(phone.trim());
+      if (normalized != null) {
+        profile['Phone'] = normalized;
+        profile['MSG-sms'] = true;
+      }
     }
 
     return profile;
+  }
+
+  /// Normalises a raw phone string to E.164 for India (+91XXXXXXXXXX).
+  ///
+  /// Handles the three common input formats:
+  ///   - 10 digits            : 9876543210   → +919876543210  ✓
+  ///   - 91 + 10 digits       : 919876543210 → +919876543210  ✓  (was broken: produced +91919…)
+  ///   - Already E.164        : +919876543210 → +919876543210 ✓
+  ///
+  /// Returns null if the result is not a valid 13-char E.164 Indian number,
+  /// so the caller can skip pushing a bad phone value to CleverTap.
+  String? _toE164India(String raw) {
+    // Strip all non-digit characters except a leading +
+    final digitsOnly = raw.replaceAll(RegExp(r'[^\d]'), '');
+
+    String e164;
+    if (raw.startsWith('+')) {
+      // Already has a + — trust whatever follows; just re-attach the +
+      e164 = '+$digitsOnly';
+    } else if (digitsOnly.startsWith('91') && digitsOnly.length == 12) {
+      // Country code present but no + (e.g. 919876543210)
+      e164 = '+$digitsOnly';
+    } else if (digitsOnly.length == 10) {
+      // Local 10-digit number — prepend India country code
+      e164 = '+91$digitsOnly';
+    } else {
+      // Unrecognised format — skip rather than push garbage
+      return null;
+    }
+
+    // Final sanity check: E.164 Indian number must be exactly +91XXXXXXXXXX (13 chars)
+    if (!RegExp(r'^\+91[6-9]\d{9}$').hasMatch(e164)) return null;
+    return e164;
   }
 
   Future<void> logout() async {

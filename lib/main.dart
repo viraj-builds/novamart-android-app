@@ -146,6 +146,12 @@ void main() async {
 
   // Explicitly ensure the user profile is opted-in to push notifications
   CleverTapPlugin.setOptOut(false);
+
+  // Required by CleverTap audit: enables city/region/country capture from
+  // the device's network carrier. Without this call those profile fields stay
+  // blank and location-based segmentation does not work.
+  CleverTapPlugin.enableDeviceNetworkInfoReporting(true);
+
   CleverTapPlugin.setDebugLevel(3);
 
   // FCM token registration is handled natively in MyFcmMessageListenerService

@@ -23,11 +23,14 @@ dependencies:
   flutter_dotenv: ^6.0.1
   firebase_core: ^3.0.0
   firebase_auth: ^5.0.0
-  # Pinned to 3.x: clevertap_plugin 4.1.0 applies its own Kotlin Gradle Plugin
-  # (KGP 1.8.22 / AGP 8.6.1), which AGP 9.0.1 no longer supports — its Kotlin
-  # sources compile only partially and CleverTapEventEmitter /
-  # CleverTapListenerProxy fail to resolve. Revisit when the plugin ships an
-  # AGP 9 compatible release.
+  # Audit note: latest clevertap_plugin is 4.2.0 (core SDK 8.4.1).
+  # Upgrade is blocked by AGP 9.0.1 in settings.gradle.kts:
+  #   clevertap_plugin 4.x bundles KGP 1.8.22 / AGP 8.6.1 which AGP 9.0.1
+  #   no longer supports — CleverTapEventEmitter / CleverTapListenerProxy fail
+  #   to resolve at compile time.
+  # Upgrade paths:
+  #   A) Downgrade AGP to 8.6.1 in settings.gradle.kts → then bump to ^4.2.0
+  #   B) Wait for clevertap_plugin to ship an AGP 9-compatible release
   clevertap_plugin: ^3.8.1
   firebase_messaging: ^15.2.10
   permission_handler: ^11.3.0

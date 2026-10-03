@@ -24,6 +24,8 @@ class AnalyticsService {
 
   void viewHome() => _record('Home Viewed');
 
+  void viewCart() => _record('Cart Viewed');
+
   void viewCategory(String categoryName) =>
       _record('Category Viewed', {'Category': categoryName});
 

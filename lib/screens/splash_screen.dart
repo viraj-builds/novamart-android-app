@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:clevertap_plugin/clevertap_plugin.dart';
 import '../routes/app_routes.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -17,6 +18,12 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _navigateToHome() async {
+    // Suppress in-app notifications while the splash is visible — showing a
+    // campaign overlay on the loading screen is a poor UX and the audit flags
+    // it as a misconfiguration.
+    // CleverTap docs: suspendInAppNotifications / resumeInAppNotifications
+    CleverTapPlugin.suspendInAppNotifications();
+
     // Show splash for at least 2 seconds, AND wait for Firebase to restore
     // the persisted auth session from disk. Both must complete before we route.
     // Using authStateChanges().first is the correct way — it resolves as soon
@@ -28,6 +35,9 @@ class _SplashScreenState extends State<SplashScreen> {
     ]);
 
     if (!mounted) return;
+
+    // Resume in-apps before navigating so they can fire on the destination screen.
+    CleverTapPlugin.resumeInAppNotifications();
 
     final user = results[1] as User?;
     if (user != null) {

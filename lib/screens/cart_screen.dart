@@ -3,9 +3,22 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import '../providers/cart_provider.dart';
+import '../services/analytics_service.dart';
 
-class CartScreen extends StatelessWidget {
+class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
+
+  @override
+  State<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Audit fix: fire 'Cart Viewed' every time the cart screen is opened.
+    AnalyticsService().viewCart();
+  }
 
   @override
   Widget build(BuildContext context) {
