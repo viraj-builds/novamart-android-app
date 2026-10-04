@@ -24,6 +24,21 @@ class AppRoutes {
   static const String notifications = '/notifications';
   static const String categories = '/categories';
 
+  static const _linkable = {main, home, cart, orderHistory, notifications, categories, login, signup};
+
+  /// "novamart://cart" / "novamart://app/cart" / "/cart" → "/cart" when it's a
+  /// screen a link may open; null otherwise.
+  static String? fromLink(String? link) {
+    if (link == null || link.isEmpty) return null;
+    final uri = Uri.tryParse(link);
+    if (uri == null) return null;
+    final parts = uri.scheme == 'novamart' ? [uri.host, ...uri.pathSegments] : uri.pathSegments;
+    final segs = parts.where((s) => s.isNotEmpty).toList();
+    if (segs.isEmpty) return uri.scheme == 'novamart' ? main : null;
+    final route = '/${segs.last}';
+    return _linkable.contains(route) ? route : null;
+  }
+
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case splash:
@@ -52,11 +67,15 @@ class AppRoutes {
       case categories:
         return MaterialPageRoute(builder: (_) => const CategoryScreen());
       default:
-        return MaterialPageRoute(
-          builder: (_) => Scaffold(
-            body: Center(child: Text('No route defined for ${settings.name}')),
-          ),
-        );
+        // A link such as "novamart://cart" or an unknown name must never end
+        // on a blank "No route defined" page: map it to a screen if we can,
+        // otherwise start from the splash (it sends the user home or to login).
+        final mapped = fromLink(settings.name);
+        if (mapped != null && mapped != settings.name) {
+          return generateRoute(RouteSettings(name: mapped, arguments: settings.arguments));
+        }
+        debugPrint('Unknown route ${settings.name} → splash');
+        return MaterialPageRoute(builder: (_) => const SplashScreen());
     }
   }
 }

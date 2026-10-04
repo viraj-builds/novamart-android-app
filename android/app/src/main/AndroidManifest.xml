@@ -28,6 +28,12 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
+            <!-- Flutter's built-in deep linking pushes the raw link (e.g.
+                 "https://…" or "novamart://") as a route name, which has no
+                 screen → blank page. CleverTap's push-click handler in
+                 clevertap_service.dart already routes novamart://<route>
+                 links, so let it be the only router. -->
+            <meta-data android:name="flutter_deeplinking_enabled" android:value="false" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>

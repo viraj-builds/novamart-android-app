@@ -86,18 +86,12 @@ class CleverTapService extends ChangeNotifier {
       _handleDeepLinkFromKV(extras);
     });
 
-    // Fired when the user taps a CleverTap push from the KILLED state after
-    // the Dart isolate has started. Complements getAppLaunchNotification().
-    CleverTapPlugin.onKilledStateNotificationClicked(_onKilledStateNotificationClicked);
-  }
-
-  static void _onKilledStateNotificationClicked(Map<String, dynamic> extras) {
-    debugPrint('CleverTap push clicked (killed state): $extras');
-    // Navigate using the navigator key — the widget tree may not be mounted
-    // yet, so we schedule the deep-link after the first frame.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      CleverTapService.instance._handleDeepLinkFromKV(extras);
-    });
+    // Killed-state tap: non-UI work only (it may run in a background isolate
+    // with no screens). Navigation for this case is done by
+    // _handleAppLaunchNotification() — doing it here too would open the
+    // screen twice.
+    // https://developer.clevertap.com/docs/flutter-push-notification
+    CleverTapPlugin.onKilledStateNotificationClicked(onKilledStateNotificationClicked);
   }
 
   Future<void> _handleAppLaunchNotification() async {
@@ -335,28 +329,23 @@ class CleverTapService extends ChangeNotifier {
         ?.toString();
     if (target == null || target.isEmpty) return;
 
-    // Strip any custom scheme, e.g. novamart://cart -> /cart
-    var route = target;
-    final schemeIndex = route.indexOf('://');
-    if (schemeIndex != -1) route = '/${route.substring(schemeIndex + 3)}';
-    if (!route.startsWith('/')) route = '/$route';
+    // https links are opened in the browser by the SDK itself — nothing to route.
+    if (target.startsWith('http://') || target.startsWith('https://')) return;
 
-    const knownRoutes = {
-      AppRoutes.main,
-      AppRoutes.home,
-      AppRoutes.cart,
-      AppRoutes.login,
-      AppRoutes.signup,
-      AppRoutes.orderHistory,
-      AppRoutes.notifications,
-      AppRoutes.categories,
-    };
-    if (!knownRoutes.contains(route)) {
-      debugPrint('CleverTap deep link ignored, unknown route: $route');
+    // novamart://cart, novamart://app/cart, cart or /cart -> /cart
+    final route = AppRoutes.fromLink(target.contains('://') || target.startsWith('/') ? target : '/$target');
+    if (route == null) {
+      debugPrint('CleverTap deep link ignored, unknown route: $target');
       return;
     }
 
     debugPrint('CleverTap deep link -> $route');
     navigatorKey.currentState?.pushNamed(route);
   }
+}
+
+/// Must be top-level and kept by the compiler, per the CleverTap Flutter docs.
+@pragma('vm:entry-point')
+void onKilledStateNotificationClicked(Map<String, dynamic> extras) {
+  debugPrint('CleverTap push clicked (killed state): $extras');
 }

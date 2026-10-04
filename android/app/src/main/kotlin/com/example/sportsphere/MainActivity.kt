@@ -1,7 +1,10 @@
 package com.example.sportsphere
 
 import android.content.Context
+import android.content.Intent
+import android.os.Build
 import android.util.Log
+import com.clevertap.android.sdk.CleverTapAPI
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -24,6 +27,18 @@ class MainActivity : FlutterFragmentActivity() {
                     result.notImplemented()
                 }
             }
+    }
+
+    // Android 12+: a push tapped while this activity is already open arrives
+    // here instead of a new activity, so the SDK must be told about the click —
+    // otherwise "Notification Clicked" isn't recorded and the Dart
+    // push-clicked handler (deep links) never fires.
+    // https://developer.clevertap.com/docs/android-12-updates
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            CleverTapAPI.getDefaultInstance(applicationContext)?.pushNotificationClickedEvent(intent.extras)
+        }
     }
 
     // Called from Dart once the runtime location permissions have been granted.
