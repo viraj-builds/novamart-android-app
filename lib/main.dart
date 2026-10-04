@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -152,7 +153,11 @@ void main() async {
   // blank and location-based segmentation does not work.
   CleverTapPlugin.enableDeviceNetworkInfoReporting(true);
 
-  CleverTapPlugin.setDebugLevel(3);
+  // Verbose CleverTap logs only in test builds — the audit's live log checks
+  // read them. Build a test APK with --dart-define=CT_VERBOSE=true; a plain
+  // `flutter build apk --release` (Play Store) keeps the SDK quiet.
+  CleverTapPlugin.setDebugLevel(
+      (kDebugMode || const bool.fromEnvironment('CT_VERBOSE')) ? 3 : 0);
 
   // FCM token registration is handled natively in MyFcmMessageListenerService
   // so we do not manually call CleverTapPlugin.setPushToken() here.
