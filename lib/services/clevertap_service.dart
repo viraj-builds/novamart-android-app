@@ -122,7 +122,10 @@ class CleverTapService extends ChangeNotifier {
 
   void _registerInAppHandlers() {
     _plugin.setCleverTapInAppNotificationShowHandler((Map<String, dynamic>? map) {
-      debugPrint('CleverTap InApp shown: $map');
+      // Log the campaign id only — the payload carries the full HTML of
+      // custom-HTML in-apps, and printing it floods logcat for seconds.
+      debugPrint('CleverTap InApp shown: '
+          '${map?['wzrk_id'] ?? map?['ti'] ?? map?.keys.toList()}');
     });
 
     _plugin.setCleverTapInAppNotificationDismissedHandler((Map<String, dynamic>? map) {

@@ -15,11 +15,21 @@ class ProductProvider with ChangeNotifier {
   SortOption _sortOption = SortOption.newest;
   bool _isLoading = false;
 
+  // Derived lists are rebuilt only when their inputs change. They used to be
+  // recomputed (filter + sort over ~120 products) on every getter call, and
+  // the home screen calls them several times per build.
+  List<Product>? _filteredCache;
+  List<String> _categories = const ['All'];
+  List<Product> _featured = const [];
+  List<Product> _popular = const [];
+
   List<Product> get products => _products;
 
   String get searchQuery => _searchQuery;
 
-  List<Product> get filteredProducts {
+  List<Product> get filteredProducts => _filteredCache ??= _computeFiltered();
+
+  List<Product> _computeFiltered() {
     List<Product> result = List.from(_products);
 
     if (_selectedCategory != 'All') {
@@ -27,11 +37,13 @@ class ProductProvider with ChangeNotifier {
     }
 
     if (_searchQuery.isNotEmpty) {
-      result = result.where((p) =>
-        p.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-        p.brand.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-        p.category.toLowerCase().contains(_searchQuery.toLowerCase())
-      ).toList();
+      final q = _searchQuery.toLowerCase();
+      result = result
+          .where((p) =>
+              p.name.toLowerCase().contains(q) ||
+              p.brand.toLowerCase().contains(q) ||
+              p.category.toLowerCase().contains(q))
+          .toList();
     }
 
     switch (_sortOption) {
@@ -60,12 +72,33 @@ class ProductProvider with ChangeNotifier {
   String get selectedCategory => _selectedCategory;
   SortOption get sortOption => _sortOption;
 
+  void _setProducts(List<Product> products) {
+    _products = products;
+    _filteredCache = null;
+    final uniqueCategories = _products.map((p) => p.category).toSet().toList()
+      ..sort();
+    _categories = ['All', ...uniqueCategories];
+    _featured = _products.where((p) => p.rating >= 4.8).toList();
+    _popular = _products.where((p) => p.discount > 10).toList();
+  }
+
+  /// Shows the cached (or bundled) catalogue straight away, then refreshes it
+  /// from the network. The shimmer is only shown when there is nothing at all
+  /// to display yet.
   Future<void> loadProducts() async {
-    _isLoading = true;
-    notifyListeners();
+    if (_products.isEmpty) {
+      _isLoading = true;
+      notifyListeners();
+      final cached = await _productService.loadCachedProducts();
+      if (cached.isNotEmpty) {
+        _setProducts(cached);
+        _isLoading = false;
+        notifyListeners();
+      }
+    }
 
     try {
-      _products = await _productService.fetchProducts();
+      _setProducts(await _productService.fetchProducts());
     } catch (e) {
       debugPrint("Error loading products: $e");
     }
@@ -76,12 +109,14 @@ class ProductProvider with ChangeNotifier {
 
   void setCategory(String category) {
     _selectedCategory = category;
+    _filteredCache = null;
     _analyticsService.viewCategory(category);
     notifyListeners();
   }
 
   void setSearchQuery(String query) {
     _searchQuery = query;
+    _filteredCache = null;
     if (query.isNotEmpty) {
       _analyticsService.search(query);
     }
@@ -90,6 +125,7 @@ class ProductProvider with ChangeNotifier {
 
   void setSortOption(SortOption option) {
     _sortOption = option;
+    _filteredCache = null;
     notifyListeners();
   }
 
@@ -102,13 +138,10 @@ class ProductProvider with ChangeNotifier {
     return _products.where((p) => p.category == category).toList();
   }
 
-  List<Product> get featuredProducts => _products.where((p) => p.rating >= 4.8).toList();
-  List<Product> get popularProducts => _products.where((p) => p.discount > 10).toList();
-  List<Product> get recommendedProducts => _products.take(10).toList()..shuffle();
+  List<Product> get featuredProducts => _featured;
+  List<Product> get popularProducts => _popular;
+  List<Product> get recommendedProducts =>
+      _products.take(10).toList()..shuffle();
 
-  List<String> get categories {
-    final uniqueCategories = _products.map((p) => p.category).toSet().toList();
-    uniqueCategories.sort();
-    return ['All', ...uniqueCategories];
-  }
+  List<String> get categories => _categories;
 }

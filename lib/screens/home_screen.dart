@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:async';
 import '../models/product_model.dart';
 import '../providers/product_provider.dart';
@@ -51,14 +52,16 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final productProvider = Provider.of<ProductProvider>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     // Check if we are showing filtered results (either search or category active)
-    final bool isFiltering = productProvider.searchQuery.isNotEmpty || 
-                           (productProvider.selectedCategory != 'All' && productProvider.selectedCategory.isNotEmpty);
+    final bool isFiltering = productProvider.searchQuery.isNotEmpty ||
+        (productProvider.selectedCategory != 'All' &&
+            productProvider.selectedCategory.isNotEmpty);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('NovaMart', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('NovaMart',
+            style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           // App Inbox entry point, badged with the CleverTap unread count.
           Consumer<CleverTapService>(
@@ -68,7 +71,9 @@ class _HomeScreenState extends State<HomeScreen> {
               badgeContent: Text(
                 '${ct.inboxUnreadCount}',
                 style: const TextStyle(
-                    color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold),
               ),
               child: child,
             ),
@@ -93,93 +98,121 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: productProvider.isLoading
           ? _buildLoadingState()
+          // A CustomScrollView with a SliverGrid builds only the cards that
+          // are on screen. The grid used to be a shrinkWrap GridView inside a
+          // SingleChildScrollView, which laid out and decoded images for all
+          // ~120 products up front and made the home screen slow to appear.
           : RefreshIndicator(
               onRefresh: () => productProvider.loadProducts(),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Search Bar
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: (value) => _onSearchChanged(value, productProvider),
-                        style: TextStyle(color: isDark ? Colors.white : Colors.black),
-                        decoration: InputDecoration(
-                          hintText: 'Search by Name, Brand, Category...',
-                          prefixIcon: Icon(Icons.search, color: isDark ? Colors.white70 : Colors.grey),
-                          suffixIcon: _searchController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: Icon(Icons.clear, color: isDark ? Colors.white70 : Colors.grey),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    productProvider.setSearchQuery('');
-                                  },
-                                )
-                              : null,
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Search Bar
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: TextField(
+                            controller: _searchController,
+                            onChanged: (value) =>
+                                _onSearchChanged(value, productProvider),
+                            style: TextStyle(
+                                color: isDark ? Colors.white : Colors.black),
+                            decoration: InputDecoration(
+                              hintText: 'Search by Name, Brand, Category...',
+                              prefixIcon: Icon(Icons.search,
+                                  color: isDark ? Colors.white70 : Colors.grey),
+                              suffixIcon: _searchController.text.isNotEmpty
+                                  ? IconButton(
+                                      icon: Icon(Icons.clear,
+                                          color: isDark
+                                              ? Colors.white70
+                                              : Colors.grey),
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        productProvider.setSearchQuery('');
+                                      },
+                                    )
+                                  : null,
+                            ),
+                          ),
+                        ),
+
+                        // Horizontal Categories
+                        SizedBox(
+                          height: 50,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: productProvider.categories.length,
+                            itemBuilder: (context, index) {
+                              final category =
+                                  productProvider.categories[index];
+                              return CategoryChip(
+                                label: category,
+                                isSelected: productProvider.selectedCategory ==
+                                    category,
+                                onTap: () {
+                                  productProvider.setCategory(category);
+                                },
+                              );
+                            },
+                          ),
+                        ),
+
+                        if (isFiltering)
+                          // Filtered Results Grid
+                          _buildSectionTitle('Search Results',
+                              productProvider.filteredProducts.length, context,
+                              isCategory: true)
+                        else ...[
+                          // Hero Banner
+                          const SizedBox(height: 16),
+                          _buildHeroBanner(),
+
+                          // CleverTap Native Display — dashboard-driven content.
+                          // Collapses to nothing when no campaign is live.
+                          Consumer<CleverTapService>(
+                            builder: (context, _, __) =>
+                                const NativeDisplayPlacement(screen: 'home'),
+                          ),
+
+                          // Featured Products
+                          _buildSectionTitle('Featured Products',
+                              productProvider.featuredProducts.length, context),
+                          _buildHorizontalProductList(
+                              productProvider.featuredProducts),
+
+                          // Popular Products
+                          _buildSectionTitle('Popular Products (Hot Deals)',
+                              productProvider.popularProducts.length, context),
+                          _buildHorizontalProductList(
+                              productProvider.popularProducts),
+
+                          // All Products Grid
+                          _buildSectionTitle('Our Collection',
+                              productProvider.products.length, context),
+                        ],
+                      ],
+                    ),
+                  ),
+                  if (isFiltering && productProvider.filteredProducts.isEmpty)
+                    const SliverToBoxAdapter(
+                      child: Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32.0),
+                          child: Text('No products found.'),
                         ),
                       ),
-                    ),
-
-                    // Horizontal Categories
-                    SizedBox(
-                      height: 50,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: productProvider.categories.length,
-                        itemBuilder: (context, index) {
-                          final category = productProvider.categories[index];
-                          return CategoryChip(
-                            label: category,
-                            isSelected: productProvider.selectedCategory == category,
-                            onTap: () {
-                              productProvider.setCategory(category);
-                            },
-                          );
-                        },
-                      ),
-                    ),
-
-                    if (isFiltering) ...[
-                      // Filtered Results Grid
-                      _buildSectionTitle('Search Results', productProvider.filteredProducts.length, context, isCategory: true),
-                      productProvider.filteredProducts.isEmpty
-                          ? const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(32.0),
-                                child: Text('No products found.'),
-                              ),
-                            )
-                          : _buildProductGrid(productProvider.filteredProducts),
-                    ] else ...[
-                      // Hero Banner
-                      const SizedBox(height: 16),
-                      _buildHeroBanner(),
-
-                      // CleverTap Native Display — dashboard-driven content.
-                      // Collapses to nothing when no campaign is live.
-                      Consumer<CleverTapService>(
-                        builder: (context, _, __) =>
-                            const NativeDisplayPlacement(screen: 'home'),
-                      ),
-
-                      // Featured Products
-                      _buildSectionTitle('Featured Products', productProvider.featuredProducts.length, context),
-                      _buildHorizontalProductList(productProvider.featuredProducts),
-
-                      // Popular Products
-                      _buildSectionTitle('Popular Products (Hot Deals)', productProvider.popularProducts.length, context),
-                      _buildHorizontalProductList(productProvider.popularProducts),
-
-                      // All Products Grid
-                      _buildSectionTitle('Our Collection', productProvider.products.length, context),
-                      _buildProductGrid(productProvider.products),
-                    ],
-                    const SizedBox(height: 20),
-                  ],
-                ),
+                    )
+                  else
+                    _buildProductGrid(isFiltering
+                        ? productProvider.filteredProducts
+                        : productProvider.products),
+                  const SliverToBoxAdapter(child: SizedBox(height: 20)),
+                ],
               ),
             ),
     );
@@ -188,7 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildLoadingState() {
     final size = MediaQuery.of(context).size;
     final crossAxisCount = size.width > 1200 ? 5 : (size.width > 800 ? 3 : 2);
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -213,7 +246,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title, int count, BuildContext context, {bool isCategory = false}) {
+  Widget _buildSectionTitle(String title, int count, BuildContext context,
+      {bool isCategory = false}) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
       child: Row(
@@ -241,17 +275,20 @@ class _HomeScreenState extends State<HomeScreen> {
       {
         'title': 'CRICKET SEASON IS HERE',
         'subtitle': 'Up to 30% Off on Pro Bats',
-        'image': 'https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=800'
+        'image':
+            'https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=800'
       },
       {
         'title': 'LEVEL UP YOUR GAME',
         'subtitle': 'New Arrival in Football Gear',
-        'image': 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800'
+        'image':
+            'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800'
       },
       {
         'title': 'YOGA & WELLNESS',
         'subtitle': 'Premium Mats for Every Pose',
-        'image': 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800'
+        'image':
+            'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800'
       },
     ];
 
@@ -268,9 +305,15 @@ class _HomeScreenState extends State<HomeScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             image: DecorationImage(
-              image: NetworkImage(banner['image']!),
+              // Cached and decoded at display size instead of full resolution.
+              image: ResizeImage(
+                CachedNetworkImageProvider(banner['image']!),
+                width: 800,
+                policy: ResizeImagePolicy.fit,
+              ),
               fit: BoxFit.cover,
-              colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.4), BlendMode.darken),
+              colorFilter: ColorFilter.mode(
+                  Colors.black.withOpacity(0.4), BlendMode.darken),
             ),
           ),
           child: Padding(
@@ -281,10 +324,17 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text(
                   banner['title']!,
-                  style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold),
                 ),
                 Text(
                   banner['subtitle']!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(color: Colors.white, fontSize: 14),
                 ),
                 const SizedBox(height: 12),
@@ -293,7 +343,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                   ),
                   child: const Text('Shop Now'),
                 ),
@@ -327,20 +378,20 @@ class _HomeScreenState extends State<HomeScreen> {
     final size = MediaQuery.of(context).size;
     final crossAxisCount = size.width > 1200 ? 5 : (size.width > 800 ? 3 : 2);
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+    return SliverPadding(
       padding: const EdgeInsets.all(16),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        childAspectRatio: 0.65, // Must match what ProductCard needs
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
+      sliver: SliverGrid(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossAxisCount,
+          childAspectRatio: 0.65,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) => ProductCard(product: products[index]),
+          childCount: products.length,
+        ),
       ),
-      itemCount: products.length,
-      itemBuilder: (context, index) {
-        return ProductCard(product: products[index]);
-      },
     );
   }
 
@@ -348,7 +399,8 @@ class _HomeScreenState extends State<HomeScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) => const FilterBottomSheet(),
     );
   }
@@ -367,13 +419,19 @@ class FilterBottomSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Sort By', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text('Sort By',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
-          _buildSortOption(context, 'Newest', SortOption.newest, productProvider),
-          _buildSortOption(context, 'Price: Low to High', SortOption.lowToHigh, productProvider),
-          _buildSortOption(context, 'Price: High to Low', SortOption.highToLow, productProvider),
-          _buildSortOption(context, 'Customer Rating', SortOption.rating, productProvider),
-          _buildSortOption(context, 'Popularity', SortOption.popularity, productProvider),
+          _buildSortOption(
+              context, 'Newest', SortOption.newest, productProvider),
+          _buildSortOption(context, 'Price: Low to High', SortOption.lowToHigh,
+              productProvider),
+          _buildSortOption(context, 'Price: High to Low', SortOption.highToLow,
+              productProvider),
+          _buildSortOption(
+              context, 'Customer Rating', SortOption.rating, productProvider),
+          _buildSortOption(
+              context, 'Popularity', SortOption.popularity, productProvider),
           const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
@@ -388,7 +446,8 @@ class FilterBottomSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildSortOption(BuildContext context, String title, SortOption option, ProductProvider provider) {
+  Widget _buildSortOption(BuildContext context, String title, SortOption option,
+      ProductProvider provider) {
     return RadioListTile<SortOption>(
       title: Text(title),
       value: option,

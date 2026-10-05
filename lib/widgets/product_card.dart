@@ -23,9 +23,12 @@ class ProductCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(product.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(product.name,
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            Text('Brand: ${product.brand}', style: const TextStyle(fontSize: 16, color: Colors.grey)),
+            Text('Brand: ${product.brand}',
+                style: const TextStyle(fontSize: 16, color: Colors.grey)),
             const SizedBox(height: 16),
             Text(product.description),
             const SizedBox(height: 24),
@@ -34,7 +37,8 @@ class ProductCard extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  Navigator.pushNamed(context, AppRoutes.productDetails, arguments: product);
+                  Navigator.pushNamed(context, AppRoutes.productDetails,
+                      arguments: product);
                 },
                 child: const Text('View Full Details'),
               ),
@@ -51,6 +55,9 @@ class ProductCard extends StatelessWidget {
       fit: BoxFit.cover,
       width: double.infinity,
       height: double.infinity,
+      // Decode at card size. Source images are up to ~1000px; decoding them at
+      // full size for every card used a lot of memory and caused jank.
+      memCacheWidth: 400,
       placeholder: (context, url) => Shimmer.fromColors(
         baseColor: Colors.grey[300]!,
         highlightColor: Colors.grey[100]!,
@@ -69,7 +76,8 @@ class ProductCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        Navigator.pushNamed(context, AppRoutes.productDetails, arguments: product);
+        Navigator.pushNamed(context, AppRoutes.productDetails,
+            arguments: product);
       },
       child: Container(
         decoration: BoxDecoration(
@@ -86,8 +94,10 @@ class ProductCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AspectRatio(
-              aspectRatio: 1,
+            // The image takes whatever height is left after the text below, so
+            // the card can't overflow — a fixed square image plus a Spacer used
+            // to throw "BOTTOM OVERFLOWED" when text wrapped or font size grew.
+            Expanded(
               child: Stack(
                 children: [
                   Hero(
@@ -95,11 +105,15 @@ class ProductCard extends StatelessWidget {
                     child: Container(
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                        color: isDark
+                            ? Colors.white.withOpacity(0.05)
+                            : Colors.grey[100],
+                        borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(20)),
                       ),
                       child: ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                        borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(20)),
                         child: _buildImage(),
                       ),
                     ),
@@ -113,7 +127,9 @@ class ProductCard extends StatelessWidget {
                       child: IconButton(
                         iconSize: 18,
                         icon: Icon(
-                          wishlistProvider.isFavorite(product) ? Icons.favorite : Icons.favorite_border,
+                          wishlistProvider.isFavorite(product)
+                              ? Icons.favorite
+                              : Icons.favorite_border,
                           color: Colors.red,
                         ),
                         onPressed: () {
@@ -130,7 +146,8 @@ class ProductCard extends StatelessWidget {
                       radius: 18,
                       child: IconButton(
                         iconSize: 18,
-                        icon: const Icon(Icons.info_outline, color: Colors.blue),
+                        icon:
+                            const Icon(Icons.info_outline, color: Colors.blue),
                         onPressed: () => _showQuickSpec(context),
                       ),
                     ),
@@ -140,7 +157,8 @@ class ProductCard extends StatelessWidget {
                       top: 10,
                       left: 10,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: Colors.orange,
                           borderRadius: BorderRadius.circular(8),
@@ -158,37 +176,39 @@ class ProductCard extends StatelessWidget {
                 ],
               ),
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      product.brand,
-                      style: TextStyle(
-                        color: isDark ? Colors.white70 : Colors.grey[600],
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10.0, vertical: 8.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.brand,
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.grey[600],
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      product.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    product.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
                     ),
-                    const Spacer(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -199,6 +219,8 @@ class ProductCard extends StatelessWidget {
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                             if (product.discount > 0)
                               Text(
@@ -208,26 +230,28 @@ class ProductCard extends StatelessWidget {
                                   decoration: TextDecoration.lineThrough,
                                   fontSize: 11,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                           ],
                         ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.star, color: Colors.amber, size: 14),
-                            Text(
-                              ' ${product.rating}',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.star, color: Colors.amber, size: 14),
+                          Text(
+                            ' ${product.rating}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],

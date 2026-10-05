@@ -222,7 +222,11 @@ class NovaMartApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => ProductProvider()..loadProducts()),
+        // Eager, so the catalogue loads while the splash is still showing.
+        // Providers are lazy by default — this one used to be created (and
+        // start its network fetch) only once the home screen first read it.
+        ChangeNotifierProvider(
+            lazy: false, create: (_) => ProductProvider()..loadProducts()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => WishlistProvider()),
         // Drives the App Inbox badge/list and the Native Display placements.

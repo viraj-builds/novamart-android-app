@@ -63,5 +63,22 @@ class Product {
     );
   }
 
+  /// Shape accepted back by [Product.fromJson] — used for the on-disk cache.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'category': category,
+        'brand': brand,
+        'description': description,
+        'price': price,
+        'discount': discount,
+        'rating': rating,
+        'stock': stock,
+        'image': image,
+        'images': images,
+        'colors': colors,
+        'sizes': sizes,
+      };
+
   double get discountedPrice => price - (price * (discount / 100));
 }

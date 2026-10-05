@@ -9,6 +9,7 @@ import '../providers/wishlist_provider.dart';
 import '../providers/product_provider.dart';
 import '../widgets/product_card.dart';
 import '../services/analytics_service.dart';
+import '../routes/app_routes.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
   final Product product;
@@ -78,14 +79,14 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   _buildQuantitySelector(),
                   const SizedBox(height: 40),
                   _buildRelatedProducts(relatedProducts),
-                  const SizedBox(height: 120),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
           ),
         ],
       ),
-      bottomSheet: _buildBottomActions(cartProvider),
+      bottomNavigationBar: _buildBottomActions(cartProvider),
     );
   }
 
@@ -168,10 +169,15 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              widget.product.category,
-              style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+            Flexible(
+              child: Text(
+                widget.product.category,
+                style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
+            const SizedBox(width: 12),
             if (widget.product.stock > 0)
               const Text('In Stock', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold))
             else
@@ -192,35 +198,50 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     );
   }
 
+  // Price, old price and discount wrap onto a second line when they don't fit.
+  // They used to sit in one Row with the rating, which overflowed on the right
+  // for most prices (e.g. "\$8200.79  \$8999.99  8% OFF  ★ 4.97").
   Widget _buildInfoRow() {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '\$${widget.product.discountedPrice.toStringAsFixed(2)}',
-          style: const TextStyle(color: Colors.blue, fontSize: 28, fontWeight: FontWeight.bold),
+        Expanded(
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text(
+                '\$${widget.product.discountedPrice.toStringAsFixed(2)}',
+                style: const TextStyle(color: Colors.blue, fontSize: 28, fontWeight: FontWeight.bold),
+              ),
+              if (widget.product.discount > 0) ...[
+                Text(
+                  '\$${widget.product.price.toStringAsFixed(2)}',
+                  style: const TextStyle(color: Colors.grey, fontSize: 18, decoration: TextDecoration.lineThrough),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(8)),
+                  child: Text(
+                    '${widget.product.discount.toInt()}% OFF',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
-        if (widget.product.discount > 0) ...[
-          const SizedBox(width: 12),
-          Text(
-            '\$${widget.product.price.toStringAsFixed(2)}',
-            style: const TextStyle(color: Colors.grey, fontSize: 18, decoration: TextDecoration.lineThrough),
+        const SizedBox(width: 12),
+        Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.star, color: Colors.amber, size: 24),
+              Text(' ${widget.product.rating}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ],
           ),
-          const SizedBox(width: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(8)),
-            child: Text(
-              '${widget.product.discount.toInt()}% OFF',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-        const Spacer(),
-        Row(
-          children: [
-            const Icon(Icons.star, color: Colors.amber, size: 24),
-            Text(' ${widget.product.rating}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          ],
         ),
       ],
     );
@@ -243,9 +264,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('$label: ', style: const TextStyle(color: Colors.grey)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
+          Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w500))),
         ],
       ),
     );
@@ -259,6 +281,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         const SizedBox(height: 12),
         Wrap(
           spacing: 12,
+          runSpacing: 8,
           children: widget.product.sizes.map((size) {
             final isSelected = _selectedSize == size;
             return ChoiceChip(
@@ -281,6 +304,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         const SizedBox(height: 12),
         Wrap(
           spacing: 12,
+          runSpacing: 8,
           children: widget.product.colors.map((color) {
             final isSelected = _selectedColor == color;
             return ChoiceChip(
@@ -303,6 +327,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         Container(
           decoration: BoxDecoration(border: Border.all(color: Colors.grey), borderRadius: BorderRadius.circular(12)),
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               IconButton(
                 onPressed: () {
@@ -347,43 +372,63 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     );
   }
 
+  void _addToCart(CartProvider cart) {
+    cart.addItem(widget.product, quantity: _quantity);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text('Added $_quantity × ${widget.product.name} to cart'),
+        duration: const Duration(seconds: 2),
+        action: SnackBarAction(
+          label: 'VIEW CART',
+          onPressed: () => Navigator.pushNamed(context, AppRoutes.cart),
+        ),
+      ));
+  }
+
   Widget _buildBottomActions(CartProvider cart) {
     return Container(
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E1E) : Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: const Offset(0, -5))],
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -5))],
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton(
-              onPressed: () {
-                cart.addItem(widget.product, quantity: _quantity);
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Added to Cart')));
-              },
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                side: const BorderSide(color: Colors.blue),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => _addToCart(cart),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    side: const BorderSide(color: Colors.blue),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Add to Cart', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
               ),
-              child: const Text('Add to Cart', style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton(
+                  // Used to be an empty handler, so the button did nothing.
+                  onPressed: () {
+                    cart.addItem(widget.product, quantity: _quantity);
+                    Navigator.pushNamed(context, AppRoutes.cart);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Buy Now', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
               ),
-              child: const Text('Buy Now', style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:clevertap_plugin/clevertap_plugin.dart';
@@ -80,6 +82,9 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<String?> login(String email, String password, {String? phone}) async {
+    // Keyboards often append a space after an autocompleted email, which
+    // Firebase rejects as malformed.
+    email = email.trim();
     try {
       // Guard the auth listener so it skips the re-identification path —
       // we call onUserLogin ourselves below after the credential resolves.
@@ -98,13 +103,15 @@ class AuthProvider with ChangeNotifier {
 
       // onUserLogin switches to a different CleverTap profile, so the in-app
       // campaigns and inbox messages for the new user have to be re-pulled.
-      await _cleverTap.fetchInApps();
-      await _cleverTap.refreshInbox();
+      // Not awaited: these are network round trips, and awaiting them held the
+      // user on the login screen (button looking dead) until both finished.
+      unawaited(_cleverTap.fetchInApps());
+      unawaited(_cleverTap.refreshInbox());
 
       return null; // success
     } on FirebaseAuthException catch (e) {
       _isLoggingIn = false; // login failed — reset so next app-start re-identifies
-      return e.message ?? 'An unknown authentication error occurred.';
+      return _friendlyAuthError(e);
     } catch (e) {
       _isLoggingIn = false;
       return 'Failed to log in: $e';
@@ -112,6 +119,7 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<String?> signup(String email, String password, {String? phone}) async {
+    email = email.trim();
     try {
       // Same guard as login() — prevents a double onUserLogin call.
       _isLoggingIn = true;
@@ -125,16 +133,48 @@ class AuthProvider with ChangeNotifier {
       _analyticsService.login(credential.user!.uid, email);
 
       // Same as login: a new profile means new in-app / inbox targeting.
-      await _cleverTap.fetchInApps();
-      await _cleverTap.refreshInbox();
+      // Not awaited: these are network round trips, and awaiting them held the
+      // user on the login screen (button looking dead) until both finished.
+      unawaited(_cleverTap.fetchInApps());
+      unawaited(_cleverTap.refreshInbox());
 
       return null; // success
     } on FirebaseAuthException catch (e) {
       _isLoggingIn = false; // signup failed — reset so next app-start re-identifies
-      return e.message ?? 'An unknown error occurred during sign up.';
+      return _friendlyAuthError(e);
     } catch (e) {
       _isLoggingIn = false;
       return 'Failed to sign up: $e';
+    }
+  }
+
+  /// Firebase's raw messages ("The supplied auth credential is incorrect,
+  /// malformed or has expired") don't tell the user what to do.
+  String _friendlyAuthError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-credential':
+      case 'wrong-password':
+      case 'user-not-found':
+      case 'INVALID_LOGIN_CREDENTIALS':
+        // Firebase returns the same code for a wrong password and for an
+        // account that doesn't exist (email enumeration protection).
+        return 'Incorrect email or password. New here? Tap "Sign Up" to create an account.';
+      case 'invalid-email':
+        return "That email address doesn't look right.";
+      case 'email-already-in-use':
+        return 'An account already exists for this email. Please log in instead.';
+      case 'weak-password':
+        return 'Password is too weak — use at least 6 characters.';
+      case 'user-disabled':
+        return 'This account has been disabled.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please wait a minute and try again.';
+      case 'network-request-failed':
+        return 'No internet connection. Check your network and try again.';
+      case 'operation-not-allowed':
+        return 'Email/password sign-in is not enabled for this Firebase project.';
+      default:
+        return e.message ?? 'Authentication failed (${e.code}).';
     }
   }
 
