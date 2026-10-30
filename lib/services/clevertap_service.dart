@@ -66,6 +66,10 @@ class CleverTapService extends ChangeNotifier {
     // where the plugin no-ops.
     await CleverTapPlugin.initializeInbox();
 
+    // Pull client-side in-apps from CleverTap on startup so campaigns
+    // (such as "App Launched", "Add to Cart", "Charged") are cached locally.
+    await fetchInApps();
+
     // Handle notification tap when the app is launched from a KILLED state
     // (Android only). Must be called after all handlers are registered.
     // https://developer.clevertap.com/docs/flutter-push-notification#perform-ui-impacting-operation-using-clevertapplugingetapplaunchnotification
@@ -136,9 +140,22 @@ class CleverTapService extends ChangeNotifier {
 
     _plugin.setCleverTapInAppNotificationButtonClickedHandler((Map<String, dynamic>? map) {
       debugPrint('CleverTap InApp button clicked: $map');
+      // Dismiss any currently visible in-app notification so it does not stay stuck on screen
+      dismissVisibleInApp();
       // For button taps the KV pairs are the payload itself.
       _handleDeepLinkFromKV(map);
     });
+  }
+
+  /// Dismisses any currently visible in-app notification and immediately resumes
+  /// in-app handling so future campaigns can still fire.
+  Future<void> dismissVisibleInApp() async {
+    try {
+      await CleverTapPlugin.discardInAppNotifications(dismissInAppIfVisible: true);
+      await CleverTapPlugin.resumeInAppNotifications();
+    } catch (e) {
+      debugPrint('CleverTap dismissVisibleInApp failed: $e');
+    }
   }
 
   /// Pulls the latest in-app campaigns from CleverTap on demand.
@@ -328,7 +345,7 @@ class CleverTapService extends ChangeNotifier {
     if (rawKV is! Map) return;
     final kv = Map<String, dynamic>.from(rawKV);
 
-    final target = (kv['route'] ?? kv['deeplink'] ?? kv['wzrk_dl'] ?? kv['screen'])
+    final target = (kv['route'] ?? kv['deeplink'] ?? kv['wzrk_dl'] ?? kv['wzrk_c2a'] ?? kv['screen'] ?? kv['action'])
         ?.toString();
     if (target == null || target.isEmpty) return;
 

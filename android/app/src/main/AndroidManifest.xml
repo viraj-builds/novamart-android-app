@@ -80,6 +80,17 @@
             android:value="sportsshop_channel" />
 
         <!--
+            CleverTap In-App Notification Activity.
+            Required for displaying Cover, Interstitial, and Half-Interstitial templates.
+            https://developer.clevertap.com/docs/flutter-in-app
+        -->
+        <activity
+            android:name="com.clevertap.android.sdk.InAppNotificationActivity"
+            android:configChanges="orientation|keyboardHidden"
+            android:hardwareAccelerated="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <!--
             Custom FCM listener – replaces the default CleverTap
             FcmMessageListenerService per the CT docs:
             https://developer.clevertap.com/docs/android-push#custom-android-push-notification-handling

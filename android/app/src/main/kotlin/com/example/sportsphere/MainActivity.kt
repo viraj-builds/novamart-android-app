@@ -80,8 +80,12 @@ class MainActivity : FlutterFragmentActivity() {
     }
 
     private fun liftAboveKeyboard(view: View, insets: WindowInsetsCompat) {
-        val parent = view.parent as? View ?: return
         val ime = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
+        if (ime <= 0) {
+            view.translationY = 0f
+            return
+        }
+        val parent = view.parent as? View ?: return
         // view.bottom is the untranslated layout position, so this is stable
         // across repeated calls.
         val covered = view.bottom - (parent.height - ime)

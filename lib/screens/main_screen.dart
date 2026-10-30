@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:badges/badges.dart' as badges;
+import 'package:clevertap_plugin/clevertap_plugin.dart';
 import '../providers/cart_provider.dart';
+import '../services/clevertap_service.dart';
 import 'home_screen.dart';
 import 'wishlist_screen.dart';
 import 'cart_screen.dart';
@@ -16,6 +18,18 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Resume in-apps now that MainScreen is rendered and stable.
+      // Any in-app notification queued during splash (e.g. "App Launched")
+      // will cleanly display here without getting cut off by route replacement.
+      await CleverTapPlugin.resumeInAppNotifications();
+      await CleverTapService.instance.fetchInApps();
+    });
+  }
 
   final List<Widget> _screens = [
     const HomeScreen(),

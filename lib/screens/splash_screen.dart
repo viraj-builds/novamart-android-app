@@ -36,9 +36,6 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (!mounted) return;
 
-    // Resume in-apps before navigating so they can fire on the destination screen.
-    CleverTapPlugin.resumeInAppNotifications();
-
     final user = results[1] as User?;
     if (user != null) {
       Navigator.pushReplacementNamed(context, AppRoutes.main);

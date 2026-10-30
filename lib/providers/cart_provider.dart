@@ -99,7 +99,7 @@ class CartProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void checkout() {
+  Future<void> checkout() async {
     _analyticsService.beginCheckout(totalAmount, itemCount);
 
     final String orderId = DateTime.now().millisecondsSinceEpoch.toString();
@@ -112,24 +112,38 @@ class CartProvider with ChangeNotifier {
 
     // ── CleverTap Charged Event ──────────────────────────────────────────────
     // chargeDetails: order-level properties (required by CleverTap)
+    // Both standard CleverTap keys ('Amount', 'Charged ID', 'Payment mode') and
+    // aliases ('total', 'amount', 'payment') are included so dashboard triggers
+    // match reliably regardless of campaign trigger criteria.
     final Map<String, dynamic> chargeDetails = {
-      'Amount': totalAmount,                // total order value
-      'Charged ID': orderId,               // unique order identifier
-      'Payment mode': 'Credit Card',       // payment method (update as needed)
+      'Amount': totalAmount,               // total order value (CleverTap standard)
+      'amount': totalAmount,
+      'total': totalAmount,
+      'Charged ID': orderId,              // unique order identifier
+      'Payment mode': 'Credit Card',      // payment method
+      'payment': 'Credit Card',
+      'Item Count': itemCount,
     };
 
-    // items: one Map per product in the cart
+    // items: one Map per product in the cart with both display and standard keys
     final List<Map<String, dynamic>> items = _items.values.map((cartItem) {
       return {
         'Product Name': cartItem.product.name,
+        'name': cartItem.product.name,
         'Category': cartItem.product.category,
+        'category': cartItem.product.category,
         'Brand': cartItem.product.brand,
         'Price': cartItem.product.discountedPrice,
+        'price': cartItem.product.discountedPrice,
+        'amount': cartItem.product.discountedPrice,
         'Quantity': cartItem.quantity,
+        'quantity': cartItem.quantity,
       };
     }).toList();
 
-    CleverTapPlugin.recordChargedEvent(chargeDetails, items);
+    // Ensure in-apps are resumed so that any campaign targeting "Charged" displays
+    await CleverTapPlugin.resumeInAppNotifications();
+    await CleverTapPlugin.recordChargedEvent(chargeDetails, items);
     // ────────────────────────────────────────────────────────────────────────
 
     clearCart();

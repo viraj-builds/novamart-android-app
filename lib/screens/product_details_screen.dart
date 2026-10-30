@@ -94,11 +94,11 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     return SliverAppBar(
       expandedHeight: 400,
       pinned: true,
-      leading: Padding(
-        padding: const EdgeInsets.all(8.0),
+      leading: const Padding(
+        padding: EdgeInsets.all(8.0),
         child: CircleAvatar(
           backgroundColor: Colors.black45,
-          child: const BackButton(color: Colors.white),
+          child: BackButton(color: Colors.white),
         ),
       ),
       flexibleSpace: FlexibleSpaceBar(
@@ -372,18 +372,31 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     );
   }
 
+  @override
+  void deactivate() {
+    ScaffoldMessenger.of(context).clearSnackBars();
+    super.deactivate();
+  }
+
   void _addToCart(CartProvider cart) {
     cart.addItem(widget.product, quantity: _quantity);
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      SnackBar(
         content: Text('Added $_quantity × ${widget.product.name} to cart'),
-        duration: const Duration(seconds: 2),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        dismissDirection: DismissDirection.horizontal,
         action: SnackBarAction(
           label: 'VIEW CART',
-          onPressed: () => Navigator.pushNamed(context, AppRoutes.cart),
+          onPressed: () {
+            messenger.hideCurrentSnackBar();
+            Navigator.pushNamed(context, AppRoutes.cart);
+          },
         ),
-      ));
+      ),
+    );
   }
 
   Widget _buildBottomActions(CartProvider cart) {
