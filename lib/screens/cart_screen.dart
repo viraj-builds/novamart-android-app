@@ -196,22 +196,32 @@ class _CartScreenState extends State<CartScreen> {
   void _showCheckoutDialog(BuildContext context, CartProvider cart) {
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Confirm Checkout'),
           content: const Text('Are you sure you want to place this order?'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(dialogContext),
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
-                cart.checkout();
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Order placed successfully!')),
-                );
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                // Dismiss the dialog before triggering checkout so the screen view
+                // is stable and not obscured when the CleverTap Charged In-App displays
+                Navigator.pop(dialogContext);
+
+                await cart.checkout();
+
+                messenger
+                  ..clearSnackBars()
+                  ..showSnackBar(
+                    const SnackBar(
+                      content: Text('Order placed successfully!'),
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
               },
               child: const Text('Confirm'),
             ),
