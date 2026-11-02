@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../routes/app_routes.dart';
-import '../services/clevertap_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,19 +20,8 @@ class _LoginScreenState extends State<LoginScreen> {
   /// taps, which used to fire several sign-in calls at once.
   bool _submitting = false;
 
-  @override
-  void initState() {
-    super.initState();
-    // Hold in-apps while the user is logging in or signing up (the sign-up
-    // screen is pushed on top of this one). A campaign shown here sits over
-    // the form - a footer in-app covers the "Sign Up" link and buttons - and
-    // swallows taps. Anything triggered meanwhile is queued and shown once
-    // auth succeeds. https://developer.clevertap.com/docs/flutter-in-app
-    // After the first frame: the service notifies listeners, which must not
-    // happen while the tree is still being built.
-    WidgetsBinding.instance.addPostFrameCallback(
-        (_) => CleverTapService.instance.suspendInAppNotifications());
-  }
+  // In-apps are deliberately NOT suspended here: logged-out users must see
+  // campaigns (e.g. App Launched) as soon as the splash hands over.
 
   @override
   void dispose() {
@@ -60,7 +48,6 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       setState(() => _submitting = false);
       if (error == null) {
-        CleverTapService.instance.resumeInAppNotifications();
         Navigator.pushReplacementNamed(context, AppRoutes.main);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

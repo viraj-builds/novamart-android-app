@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../routes/app_routes.dart';
-import '../services/clevertap_service.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -54,8 +53,6 @@ class _SignupScreenState extends State<SignupScreen> {
       if (!mounted) return;
       setState(() => _submitting = false);
       if (error == null) {
-        // In-apps were held by the login screen underneath this one.
-        CleverTapService.instance.resumeInAppNotifications();
         // Clear login + signup off the stack so Back doesn't return to them.
         Navigator.pushNamedAndRemoveUntil(context, AppRoutes.main, (_) => false);
       } else {

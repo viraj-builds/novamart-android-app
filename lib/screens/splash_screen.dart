@@ -34,10 +34,13 @@ class _SplashScreenState extends State<SplashScreen> {
       FirebaseAuth.instance.authStateChanges().first,
     ]);
 
-    if (!mounted) return;
-
-    // Resume in-apps before navigating so they can fire on the destination screen.
+    // Resume in-apps before navigating so they can fire on the destination
+    // screen. Done before the mounted check: the suspend is SDK-wide and
+    // outlives this screen, so leaving the splash early (back press) must not
+    // leave in-apps blocked for the rest of the session.
     CleverTapPlugin.resumeInAppNotifications();
+
+    if (!mounted) return;
 
     final user = results[1] as User?;
     if (user != null) {
