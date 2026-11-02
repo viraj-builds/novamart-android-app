@@ -22,7 +22,10 @@ class AuthProvider with ChangeNotifier {
   bool _isLoggingIn = false;
 
   bool get isAuthenticated => _isAuthenticated;
-  String? get email => _email;
+
+  /// Falls back to Firebase's own session so the profile never shows the
+  /// placeholder while a user is signed in, even before the first auth event.
+  String? get email => _email ?? _auth.currentUser?.email;
 
   AuthProvider() {
     _initAuthListener();
@@ -33,7 +36,15 @@ class AuthProvider with ChangeNotifier {
       if (user != null) {
         _isAuthenticated = true;
         _email = user.email;
-        StorageService.setString('user_email', user.email!);
+        // Published before any CleverTap work. notifyListeners() used to run
+        // only at the end of this callback, after awaiting fetchInApps() and
+        // refreshInbox(): when either was slow, threw, or never completed (as
+        // on a fresh install on another device) the profile kept showing
+        // "user@example.com" for the whole session.
+        notifyListeners();
+        if (user.email != null) {
+          StorageService.setString('user_email', user.email!);
+        }
 
         if (_isLoggingIn) {
           // Active login/signup flow: login()/signup() call onUserLogin
@@ -62,8 +73,9 @@ class AuthProvider with ChangeNotifier {
           // Re-fetch in-app campaigns and inbox for this profile (same as
           // login/signup — the SDK may have rotated to an anonymous profile
           // between sessions if the app was cleared from memory).
-          await _cleverTap.fetchInApps();
-          await _cleverTap.refreshInbox();
+          // Not awaited, as in login(): these are network round trips.
+          unawaited(_cleverTap.fetchInApps());
+          unawaited(_cleverTap.refreshInbox());
         }
 
         // Always re-assert channel opt-ins (safe with profileSet since these

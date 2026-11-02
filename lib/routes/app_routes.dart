@@ -50,9 +50,14 @@ class AppRoutes {
       case main:
         return MaterialPageRoute(builder: (_) => const MainScreen());
       case productDetails:
-        final product = settings.arguments as Product;
+        // (product, heroTag) from ProductCard; a bare Product still works.
+        final args = settings.arguments;
+        final (Product product, String heroTag) = args is (Product, String)
+            ? args
+            : (args as Product, 'product-${(args).id}');
         return MaterialPageRoute(
-          builder: (_) => ProductDetailsScreen(product: product),
+          builder: (_) =>
+              ProductDetailsScreen(product: product, heroTag: heroTag),
         );
       case cart:
         return MaterialPageRoute(builder: (_) => const CartScreen());

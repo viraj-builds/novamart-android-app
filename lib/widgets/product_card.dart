@@ -9,7 +9,22 @@ import '../routes/app_routes.dart';
 class ProductCard extends StatelessWidget {
   final Product product;
 
-  const ProductCard({super.key, required this.product});
+  /// Names the list this card sits in (e.g. 'featured', 'wishlist'). The same
+  /// product can be on screen in several lists at once — Featured, Popular and
+  /// the grid, or Home and the Wishlist tab kept alive by the IndexedStack — and
+  /// identical Hero tags make Flutter throw "multiple heroes that share the
+  /// same tag" (a red screen) the moment a product is opened.
+  final String heroScope;
+
+  const ProductCard(
+      {super.key, required this.product, required this.heroScope});
+
+  String get _heroTag => 'product-$heroScope-${product.id}';
+
+  void _openDetails(BuildContext context) {
+    Navigator.pushNamed(context, AppRoutes.productDetails,
+        arguments: (product, _heroTag));
+  }
 
   void _showQuickSpec(BuildContext context) {
     showModalBottomSheet(
@@ -37,8 +52,7 @@ class ProductCard extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  Navigator.pushNamed(context, AppRoutes.productDetails,
-                      arguments: product);
+                  _openDetails(context);
                 },
                 child: const Text('View Full Details'),
               ),
@@ -75,10 +89,7 @@ class ProductCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
-      onTap: () {
-        Navigator.pushNamed(context, AppRoutes.productDetails,
-            arguments: product);
-      },
+      onTap: () => _openDetails(context),
       child: Container(
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
@@ -101,7 +112,7 @@ class ProductCard extends StatelessWidget {
               child: Stack(
                 children: [
                   Hero(
-                    tag: 'product-${product.id}',
+                    tag: _heroTag,
                     child: Container(
                       width: double.infinity,
                       decoration: BoxDecoration(

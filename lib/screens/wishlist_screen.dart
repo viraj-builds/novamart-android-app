@@ -67,7 +67,8 @@ class WishlistScreen extends StatelessWidget {
               ),
               itemCount: wishlistItems.length,
               itemBuilder: (context, index) {
-                return ProductCard(product: wishlistItems[index]);
+                return ProductCard(
+                    product: wishlistItems[index], heroScope: 'wishlist');
               },
             ),
     );

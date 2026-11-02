@@ -183,13 +183,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           _buildSectionTitle('Featured Products',
                               productProvider.featuredProducts.length, context),
                           _buildHorizontalProductList(
-                              productProvider.featuredProducts),
+                              productProvider.featuredProducts, 'featured'),
 
                           // Popular Products
                           _buildSectionTitle('Popular Products (Hot Deals)',
                               productProvider.popularProducts.length, context),
                           _buildHorizontalProductList(
-                              productProvider.popularProducts),
+                              productProvider.popularProducts, 'popular'),
 
                           // All Products Grid
                           _buildSectionTitle('Our Collection',
@@ -356,7 +356,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildHorizontalProductList(List<Product> products) {
+  Widget _buildHorizontalProductList(List<Product> products, String heroScope) {
     return SizedBox(
       height: 280,
       child: ListView.builder(
@@ -367,7 +367,7 @@ class _HomeScreenState extends State<HomeScreen> {
           return Container(
             width: 180,
             margin: const EdgeInsets.only(right: 16),
-            child: ProductCard(product: products[index]),
+            child: ProductCard(product: products[index], heroScope: heroScope),
           );
         },
       ),
@@ -388,7 +388,8 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisSpacing: 16,
         ),
         delegate: SliverChildBuilderDelegate(
-          (context, index) => ProductCard(product: products[index]),
+          (context, index) =>
+              ProductCard(product: products[index], heroScope: 'grid'),
           childCount: products.length,
         ),
       ),

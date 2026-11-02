@@ -14,7 +14,11 @@ import '../routes/app_routes.dart';
 class ProductDetailsScreen extends StatefulWidget {
   final Product product;
 
-  const ProductDetailsScreen({super.key, required this.product});
+  /// Must match the tag of the [ProductCard] that opened this screen.
+  final String heroTag;
+
+  const ProductDetailsScreen(
+      {super.key, required this.product, required this.heroTag});
 
   @override
   State<ProductDetailsScreen> createState() => _ProductDetailsScreenState();
@@ -105,7 +109,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         background: Stack(
           children: [
             Hero(
-              tag: 'product-${widget.product.id}',
+              tag: widget.heroTag,
               child: Container(
                 color: Colors.white,
                 child: CarouselSlider(
@@ -363,7 +367,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               return Container(
                 width: 160,
                 margin: const EdgeInsets.only(right: 16),
-                child: ProductCard(product: products[index]),
+                child: ProductCard(product: products[index], heroScope: 'related'),
               );
             },
           ),
@@ -372,10 +376,24 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     );
   }
 
+  // Looked up while the screen is still mounted. It used to be looked up in
+  // deactivate(), which runs while the route is being popped and its
+  // ancestors are already unreachable — that threw "No ScaffoldMessenger
+  // widget found", the red screen after pressing back.
+  ScaffoldMessengerState? _messenger;
+
   @override
-  void deactivate() {
-    ScaffoldMessenger.of(context).clearSnackBars();
-    super.deactivate();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _messenger = ScaffoldMessenger.of(context);
+  }
+
+  @override
+  void dispose() {
+    // The messenger is app-wide, so a snackbar shown here would otherwise
+    // stay on top of whichever screen comes next.
+    _messenger?.clearSnackBars();
+    super.dispose();
   }
 
   void _addToCart(CartProvider cart) {
@@ -428,6 +446,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   // Used to be an empty handler, so the button did nothing.
                   onPressed: () {
                     cart.addItem(widget.product, quantity: _quantity);
+                    _messenger?.clearSnackBars();
                     Navigator.pushNamed(context, AppRoutes.cart);
                   },
                   style: ElevatedButton.styleFrom(

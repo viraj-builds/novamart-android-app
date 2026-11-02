@@ -161,9 +161,15 @@ class CleverTapService extends ChangeNotifier {
   /// Pulls the latest in-app campaigns from CleverTap on demand.
   /// Useful right after login, when the segment a user belongs to changes.
   Future<bool> fetchInApps() async {
-    final fetched = await CleverTapPlugin.fetchInApps();
-    debugPrint('CleverTap fetchInApps -> $fetched');
-    return fetched ?? false;
+    try {
+      final fetched = await CleverTapPlugin.fetchInApps();
+      debugPrint('CleverTap fetchInApps -> $fetched');
+      return fetched ?? false;
+    } catch (e) {
+      // A failed fetch must not break callers (app start, login).
+      debugPrint('CleverTap fetchInApps failed: $e');
+      return false;
+    }
   }
 
   /// Pauses in-apps. Anything triggered meanwhile is queued and shown once
